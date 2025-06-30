@@ -14,5 +14,21 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/BioScanDB
+      - MAP_KEY=${MAP_KEY}
     command: npm run dev
-    restart: unless-stopped 
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:latest
+    container_name: bioscan-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongodb_data: 
