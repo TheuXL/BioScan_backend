@@ -39,20 +39,16 @@ Esta pasta contém os clientes de API para integração com os serviços da NASA
 *   **Tratamento de Dados:** Desenvolver a lógica para processar e organizar os dados de temperatura (e.g., garantir unicidade por data).
 *   **Testes:** Criar testes unitários e de integração para verificar a funcionalidade deste cliente e a integridade dos dados.
 
-## 3. NASA Sea Level Change API
+## 3. NASA Sea Level / nível do mar (Climate Tools)
 
-**Arquivo:** `NasaSeaLevel.js`
+**Pasta:** `NasaSeaLevel/` (TypeScript: `NasaSeaLevelService`, `NasaSeaLevelController`, `NasaSeaLevelRoutes`, `NasaSeaLevelModels`, `NasaSeaLevelTypes`)
 
-**O que faz:** Este cliente busca dados de variação do nível do mar de uma API pública intermediária que utiliza dados da NASA.
+**O que faz:** Obtém JSON público de variação do nível médio global (proxy [Climate Tools](https://api.climatetools.org/sea-level)), com referência científica em [NASA Sea Level Change](https://sealevel.nasa.gov/data/).
 
-**Status Atual:**
+**Status atual:**
 
-*   **Configurado:** Não requer chave de API, pois a API que ele consome é pública.
-*   **Requisição:** Possui um método `getGlobalSeaLevel` que busca os dados de nível do mar.
-*   **Integração no Backend:** A rota `/api/ice-melt` em `src/index.js` já está utilizando este cliente.
-
-**O que falta:**
-
-*   **Salvamento de Dados:** Implementar a lógica para salvar os dados de nível do mar retornados no `SeaLevelAndIceModel` do MongoDB.
-*   **Tratamento de Dados:** Desenvolver a lógica para processar e organizar os dados de nível do mar, se necessário.
-*   **Testes:** Criar testes unitários e de integração para verificar a funcionalidade deste cliente e a integridade dos dados.
+*   **Sem API key** para o Climate Tools.
+*   **Rotas:** `GET /api/ice-melt` (live), `GET /api/ice-melt/latest` (MongoDB), `POST /api/ice-melt/sync`, `GET /api/ice-melt/sync-status`.
+*   **MongoDB:** coleção `nasa_sea_level`, documento único `source: climate_tools_global` com `payload` (Mixed) e `fetchedAt`.
+*   **Sincronização:** cron semanal (domingo 00:00 UTC), configurável em `NasaSeaLevelTypes.SYNC_CONFIG`.
+*   **Testes:** `src/__tests__/NasaSeaLevel/NasaSeaLevel.test.js` (integração real API + MongoDB).

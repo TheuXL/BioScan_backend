@@ -41,15 +41,15 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | `NasaGistempService` → MongoDB `nasa_gistemp` → `GET /api/global-temperature`, `/stats`. |
 | **Globo** | Não são milhares de pontos; usar **gráfico temporal**, faixas de cor (“climate stripes”) ou painel junto ao globo. |
 
-### Nível do mar / contexto de degelo (cliente atual)
+### Nível do mar / contexto de degelo (módulo `NasaSeaLevel/`)
 
 | Campo | Detalhe |
 |-------|---------|
 | **O que traz** | Séries de **nível médio global do mar** (proxy via API pública agregada); relacionado com **degelo / oceano**. |
-| **API / doc** | Cliente em `NasaSeaLevel/` — [Climate Tools API](https://api.climatetools.org/) (intermédia; dados alinhados a literatura NASA). |
-| **Resumo** | HTTP JSON; sem a mesma chave que FIRMS. |
-| **Entrega** | **JSON** (estrutura do fornecedor). |
-| **Uso BioScan** | `GET /api/ice-melt` no `index.js`. |
+| **API / doc** | [Climate Tools](https://api.climatetools.org/sea-level) · [NASA Sea Level](https://sealevel.nasa.gov/data/) |
+| **Resumo** | HTTP JSON; sem chave; serviço pode ter indisponibilidade pontual (503). |
+| **Entrega** | **JSON** (estrutura do fornecedor; guardada como `Mixed` em MongoDB). |
+| **Uso BioScan** | `GET /api/ice-melt` (live), `GET /api/ice-melt/latest`, `POST /api/ice-melt/sync`, coleção `nasa_sea_level`. |
 | **Globo** | Curva temporal ou indicador; não pontos por incêndio. |
 
 ---

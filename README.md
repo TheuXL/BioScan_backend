@@ -105,7 +105,10 @@ npm start
 | Método | Rota | Descrição |
 |--------|------|-----------|
 | `GET` | `/api/global-temperature` | Dados GISTEMP (conforme rotas do módulo). |
-| `GET` | `/api/ice-melt` | Dados de variação do nível do mar (cliente atual). |
+| `GET` | `/api/ice-melt` | Nível do mar (JSON em direto da API Climate Tools). |
+| `GET` | `/api/ice-melt/latest` | Último snapshot em MongoDB (`nasa_sea_level`). |
+| `POST` | `/api/ice-melt/sync` | Atualiza snapshot a partir da API. |
+| `GET` | `/api/ice-melt/sync-status` | Estado do cron de sincronização. |
 | `GET` | `/health` | Saúde da API, MongoDB e estado dos syncs expostos. |
 
 Rotas ainda não implementadas podem devolver `501` com mensagem explicativa.

@@ -3,8 +3,6 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const NasaSeaLevelApi = require('./infrastructure/apis/NASA/NasaSeaLevel/NasaSeaLevel');
-
 // NASA Fire Module (new structure)
 const { NasaFireService } = require('./infrastructure/apis/NASA/NasaFire/NasaFireService');
 const { createNasaFireRoutes } = require('./infrastructure/apis/NASA/NasaFire/NasaFireRoutes');
@@ -12,6 +10,8 @@ const { createNasaFireRoutes } = require('./infrastructure/apis/NASA/NasaFire/Na
 // NASA GISTEMP Module (new structure)
 const { NasaGistempService } = require('./infrastructure/apis/NASA/NasaGistemp/NasaGistempService');
 const { createNasaGistempRoutes } = require('./infrastructure/apis/NASA/NasaGistemp/NasaGistempRoutes');
+const { NasaSeaLevelService } = require('./infrastructure/apis/NASA/NasaSeaLevel/NasaSeaLevelService');
+const { createNasaSeaLevelRoutes } = require('./infrastructure/apis/NASA/NasaSeaLevel/NasaSeaLevelRoutes');
 
 const app = express();
 
@@ -90,12 +90,14 @@ app.get('/health', (req, res) => {
   const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
   const fireSyncStatus = app.locals.nasaFireService ? app.locals.nasaFireService.getSyncStatus() : null;
   const gistempSyncStatus = app.locals.nasaGistempService ? app.locals.nasaGistempService.getSyncStatus() : null;
-  
+  const seaLevelSyncStatus = app.locals.nasaSeaLevelService ? app.locals.nasaSeaLevelService.getSyncStatus() : null;
+
   res.status(200).json({
     status: 'healthy',
     mongodb: mongoStatus,
     fireSync: fireSyncStatus,
-    gistempSync: gistempSyncStatus
+    gistempSync: gistempSyncStatus,
+    seaLevelSync: seaLevelSyncStatus
   });
 });
 
