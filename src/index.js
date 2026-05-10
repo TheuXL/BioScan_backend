@@ -3,71 +3,64 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const NasaFireApi = require('./infrastructure/apis/NASA/NasaFire');
-const NasaGistempApi = require('./infrastructure/apis/NASA/NasaGistemp');
-const NasaSeaLevelApi = require('./infrastructure/apis/NASA/NasaSeaLevel');
-const FireModel = require('./infrastructure/database/models/FireModel');
+const NasaSeaLevelApi = require('./infrastructure/apis/NASA/NasaSeaLevel/NasaSeaLevel');
+
+// NASA Fire Module (new structure)
+const { NasaFireService } = require('./infrastructure/apis/NASA/NasaFire/NasaFireService');
+const { createNasaFireRoutes } = require('./infrastructure/apis/NASA/NasaFire/NasaFireRoutes');
+
+// NASA GISTEMP Module (new structure)
+const { NasaGistempService } = require('./infrastructure/apis/NASA/NasaGistemp/NasaGistempService');
+const { createNasaGistempRoutes } = require('./infrastructure/apis/NASA/NasaGistemp/NasaGistempRoutes');
 
 const app = express();
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// Middleware
+// Middleware (must be configured before routes)
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-// API Clients (instantiate with environment variables)
-const nasaFireApi = new NasaFireApi({ apiKey: process.env.MAP_KEY });
-const nasaGistempApi = new NasaGistempApi({ apiKey: process.env.NOAA_API_KEY });
-const nasaSeaLevelApi = new NasaSeaLevelApi();
-
-// Routes
-app.get('/api/fires', async (req, res) => {
-  try {
-    const firesData = await nasaFireApi.getActiveFires();
-    // Save data to MongoDB
-    const newFireEntry = new FireModel(firesData);
-    await newFireEntry.save();
-    console.log('Fire data saved to MongoDB.');
-    res.json(firesData);
-  } catch (error) {
-    console.error('Error in /api/fires:', error.message);
-    res.status(500).json({ message: 'Could not fetch or save active fire data.' });
-  }
-});
-
-app.get('/api/fires/by-region', async (req, res) => {
-  try {
-    const { region } = req.query;
-    if (!region) {
-      return res.status(400).json({ message: 'Region parameter is required.' });
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bio_scan_db')
+  .then(() => {
+    console.log('MongoDB connected successfully');
+    
+    // Initialize NASA Fire Service and start sync
+    if (process.env.MAP_KEY) {
+      const nasaFireService = new NasaFireService({ 
+        apiKey: process.env.MAP_KEY
+      });
+      
+      // Start automatic synchronization
+      nasaFireService.startSync();
+      
+      // Store service instance for access in other parts of the app
+      app.locals.nasaFireService = nasaFireService;
+      
+      // Setup NASA Fire routes
+      const nasaFireRouter = express.Router();
+      app.use('/api/fires', createNasaFireRoutes(nasaFireRouter, nasaFireService));
+    } else {
+      console.warn('MAP_KEY not found. NASA Fire sync service will not start.');
     }
-    const firesData = await nasaFireApi.getActiveFires({ region });
-    // Save data to MongoDB
-    const newFireEntry = new FireModel(firesData);
-    await newFireEntry.save();
-    console.log('Fire data by region saved to MongoDB.');
-    res.json(firesData);
-  } catch (error) {
-    console.error('Error in /api/fires/by-region:', error.message);
-    res.status(500).json({ message: 'Could not fetch or save fire data by region.' });
-  }
-});
 
-app.get('/api/global-temperature', async (req, res) => {
-  try {
-    const { startDate, endDate, limit } = req.query;
-    const temperatureData = await nasaGistempApi.getGlobalTemperatureAnomalies({ startDate, endDate, limit });
-    res.json(temperatureData);
-  } catch (error) {
-    console.error('Error in /api/global-temperature:', error.message);
-    res.status(500).json({ message: 'Could not fetch global temperature data.' });
-  }
-});
+    // Initialize NASA GISTEMP Service and start sync
+    const nasaGistempService = new NasaGistempService();
+    
+    // Start automatic synchronization (weekly)
+    nasaGistempService.startSync();
+    
+    // Store service instance for access in other parts of the app
+    app.locals.nasaGistempService = nasaGistempService;
+    
+    // Setup NASA GISTEMP routes
+    const nasaGistempRouter = express.Router();
+    app.use('/api/global-temperature', createNasaGistempRoutes(nasaGistempRouter, nasaGistempService));
+  })
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// API Clients (instantiate with environment variables)
+const nasaSeaLevelApi = new NasaSeaLevelApi();
 
 app.get('/api/ice-melt', async (req, res) => {
   try {
@@ -94,7 +87,16 @@ app.get('/api/extinction', (req, res) => {
 
 // Health Check
 app.get('/health', (req, res) => {
-  res.status(200).send('API is healthy');
+  const mongoStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+  const fireSyncStatus = app.locals.nasaFireService ? app.locals.nasaFireService.getSyncStatus() : null;
+  const gistempSyncStatus = app.locals.nasaGistempService ? app.locals.nasaGistempService.getSyncStatus() : null;
+  
+  res.status(200).json({
+    status: 'healthy',
+    mongodb: mongoStatus,
+    fireSync: fireSyncStatus,
+    gistempSync: gistempSyncStatus
+  });
 });
 
 const PORT = process.env.PORT || 3000;

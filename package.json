@@ -4,8 +4,8 @@
   "description": "BioScan Backend - Environmental data API",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
+    "start": "node -r ts-node/register src/index.js",
+    "dev": "nodemon -r ts-node/register src/index.js",
     "test": "jest --forceExit --detectOpenHandles --verbose",
     "test:firms": "jest src/__tests__/tests/Firms.test.js --forceExit --detectOpenHandles --verbose"
   },
@@ -25,10 +25,21 @@
     "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "helmet": "^7.1.0",
-    "mongoose": "^8.4.1"
+    "mongoose": "^8.4.1",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/helmet": "^0.0.48",
+    "@types/jest": "^30.0.0",
+    "@types/mongoose": "^5.11.96",
+    "@types/node": "^25.0.10",
+    "@types/node-cron": "^3.0.11",
     "jest": "^30.0.3",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.11",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }

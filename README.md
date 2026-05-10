@@ -1,158 +1,143 @@
-# 🌍 BioScan Backend
+# BioScan Backend
 
-Environmental data API providing real-time information about various environmental conditions around the world.
+API Node.js que agrega dados ambientais de **fontes públicas globais** (NASA, NOAA, organismos internacionais, etc.), persiste o que fizer sentido em **MongoDB** e expõe tudo via **REST** para aplicações cliente — em especial um **frontend com globo interativo** (estilo “Earth”), onde cada camada de dados pode ser mostrada como pontos ou geometrias sobre o planeta.
 
-## BioScan: Backend Node.js - Construindo a Espinha Dorsal da Conscientização Ambiental
-
-### O Que é o Backend do BioScan?
-
-O backend do BioScan é o motor que impulsiona a plataforma. É a parte invisível aos olhos do usuário, mas essencial para coletar, processar, organizar e fornecer os dados ambientais que tornam o BioScan tão poderoso. Utilizamos Node.js para construir uma API robusta e escalável, capaz de integrar diversas fontes de dados e alimentar o frontend com informações precisas e atualizadas.
-
-### Nosso Objetivo:
-
-*   **Coleta de Dados:** Integrar APIs de diversas fontes de dados ambientais confiáveis (NASA, NOAA, etc.).
-*   **Processamento e Organização:** Limpar, transformar e organizar os dados coletados em um formato consistente e útil.
-*   **Escalabilidade:** Desenvolver uma arquitetura capaz de lidar com grandes volumes de dados e um número crescente de usuários.
-*   **Confiabilidade:** Garantir que os dados apresentados sejam precisos, atualizados e confiáveis.
-*   **Disponibilização de Dados:** Fornecer os dados processados ao frontend através de uma API RESTful bem documentada.
-
-### Como o Backend do BioScan Funciona? (Visão Geral)
-
-O backend conecta-se a diversas APIs de dados ambientais. Os dados são processados, armazenados em um banco de dados MongoDB e disponibilizados através de uma API RESTful.
-
-### Status Atual do Desenvolvimento
-
-O projeto BioScan Backend está em fase inicial de desenvolvimento, com a estrutura de pastas e as configurações básicas estabelecidas. Até o momento, o status é o seguinte:
-
-*   **Estrutura de Projeto:** A arquitetura limpa (`domain/`, `application/`, `infrastructure/`, `interfaces/`) está definida e implementada.
-*   **APIs da NASA:** Os clientes para `NASA FIRMS` (incêndios), `NASA GISTEMP` (temperatura global) e `NASA Sea Level Change` (nível do mar/degelo) foram configurados. A API FIRMS já está integrada para buscar e salvar dados de incêndios no MongoDB.
-*   **Banco de Dados:** A conexão com o MongoDB está estabelecida via Mongoose, e os modelos de dados (`FireModel`, `DeforestationModel`, `GlobalTemperatureModel`, `SeaLevelAndIceModel`, `OceanPollutionModel`, `EndangeredSpeciesModel`, `SatelliteImageryModel`, `WeatherModel`) foram criados para todas as categorias de dados ambientais.
-*   **Variáveis de Ambiente:** O carregamento de variáveis de ambiente (`.env`) está configurado, e as chaves `MAP_KEY` (para FIRMS) e `MONGODB_URI` estão em uso.
-*   **Docker:** A configuração do Docker e Docker Compose está ajustada para incluir o serviço de MongoDB, facilitando o ambiente de desenvolvimento.
-
-### Próximos Passos (Geral):
-
-*   Completar a implementação de todas as APIs (clientes e lógica de salvamento).
-*   Desenvolver a camada de `application/` (serviços e controladores) e `domain/` (lógica de negócio e validações).
-*   Aprimorar o tratamento de erros e validações.
-*   Implementar autenticação (JWT) conforme planejado.
-
-## Visão Geral da Documentação
-
-Para detalhes sobre o projeto e seu desenvolvimento:
-
-*   **Documentação Interna das APIs da NASA:** Consulte `src/infrastructure/apis/NASA/README.md` para entender as configurações e o status de cada API da NASA.
-*   **Documentação dos Testes:** Consulte `src/__tests__/tests/README.md` para saber como executar os testes e o que cada teste verifica.
-*   **Estrutura de Projeto:** A estrutura de pastas principal está detalhada na seção `🔧 Development` abaixo.
+Este repositório contém **apenas o backend**. Documentação do frontend será mantida noutro projeto.
 
 ---
 
-## 📋 Overview
+## Visão do produto (como encaixa o globo)
 
-BioScan Backend is a Node.js API that aggregates data from multiple environmental data sources including:
+O objetivo da plataforma BioScan é **tornar visíveis** problemas ambientais globais: incêndios, poluição marinha, derretimento, temperatura, desmatamento, espécies ameaçadas, etc.
 
-- Active fires (NASA FIRMS)
-- Deforestation (Global Forest Watch)
-- Ocean pollution
-- Global temperature changes
-- Ice melt
-- Endangered species
+- O **backend** é responsável por **integrar dezenas de serviços públicos**, normalizar e guardar dados, e servir **JSON estável** e filtrável.
+- O **frontend** (fora deste repo) apresentará um **globo 3D interativo** no qual o utilizador escolhe **que tipo de dados** ver e **onde** navegar; cada registo georreferenciado vindo desta API pode ser desenhado como **marcador**, **heatmap** ou outra camada suportada pela biblioteca de globo (ex.: Cesium, Three.js + globo, Mapbox GL, etc.).
 
-The API is built with a clean architecture approach, separating concerns into domain, application, infrastructure, and interface layers.
+Cada nova fonte pública deve seguir o mesmo padrão: **cliente HTTP → serviço → (opcional) modelo MongoDB → controlador → rota** — para o globo consumir sempre listas com **coordenadas** e metadados consistentes.
 
-## 🛠 Tech Stack
+---
 
-- **Node.js** - JavaScript runtime
-- **Express.js** - Web framework
-- **Axios** - HTTP client
-- **Docker** - Containerization
+## Objetivos deste backend
 
-## 🚀 Getting Started
+| Objetivo | Descrição |
+|----------|-----------|
+| **Integração** | Conectar-se a APIs e downloads públicos confiáveis, com chaves onde exigido. |
+| **Persistência** | Guardar séries e eventos em coleções MongoDB com índices úteis (tempo, geo, fonte). |
+| **API REST** | Expor leitura filtrada e, quando aplicável, sincronização manual ou estado de jobs. |
+| **Escalabilidade** | Suportar mais fontes e volume crescente (paginação, limites, quotas respeitadas). |
+| **Contrato para o globo** | Respostas com **latitude/longitude** (ou geometria futura) por ponto, mais campos de estilo/cor no cliente. |
 
-### Prerequisites
+---
 
-- Node.js (v16+)
-- Docker and Docker Compose (optional)
+## Estado atual (resumo honesto)
 
-### Environment Variables
+### Implementado e alinhado com o globo (incêndios — NASA FIRMS)
 
-Create a `.env` file in the root directory with the following variables:
+- **Fonte:** [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/) (`firms.modaps.eosdis.nasa.gov`), via endpoint **`/api/area/csv/...`** (o formato JSON da área devolve erro neste serviço; o CSV é o suportado).
+- **Autenticação:** variável de ambiente **`MAP_KEY`** (Map Key gratuita da NASA), enviada no **path** do URL, nunca ao browser.
+- **Persistência:** coleção MongoDB **`nasa_fire`**, modelo Mongoose **`NasaFire`** (`src/infrastructure/apis/NASA/NasaFire/NasaFireModels.ts`).
+- **Campos principais para o globo:** `latitude`, `longitude` (obrigatórios), mais `acq_date`, `acq_time`, `source`, `confidence`, `frp`, `daynight`, etc.
+- **Deduplicação:** campo **`fireId`** (derivado de posição + data/hora + fonte) para não duplicar a mesma deteção em sincronizações repetidas.
+- **Sincronização:** `NasaFireService.startSync()` (cron) + `POST /api/fires/sync` para disparo manual.
+- **Testes:** integração real com FIRMS e MongoDB em `src/__tests__/NasaFire/` e `src/__tests__/MongoDB/`.
 
-```
+**Uso no frontend para pontos de incêndio:** `GET /api/fires` devolve `{ count, data: [ ... ] }` onde cada elemento tem `latitude` e `longitude` — pronto para projetar no globo.
+
+### Outras peças no repositório (grau de maturidade variável)
+
+- **Temperatura global (GISTEMP):** módulo TypeScript em `NasaGistemp/` com rotas dedicadas (sincronização e leitura conforme implementação atual).
+- **Nível do mar / degelo (proxy):** `GET /api/ice-melt` via cliente em `NasaSeaLevel/` (API intermédia pública).
+- **Stubs / clientes legados:** `GlobalForestWatch`, `Copernicus`, `IUCNRedList`, `NSIDC`, `MarineDebrisTracker`, `OpenWeatherMap` — estrutura preparada; integração completa e persistência para o globo são **próximas fases**.
+- **Rotas placeholder:** `GET /api/deforestation`, `/api/ocean-pollution`, `/api/extinction` podem responder `501` até haver implementação.
+
+---
+
+## Variáveis de ambiente
+
+Cria um ficheiro `.env` na raiz do projeto:
+
+```env
 PORT=3000
 NODE_ENV=development
-MONGO_URL=mongodb://mongodb:27017/BioScanDB
-FIRMS_API_KEY = MAP_KEY=your_nasa_firms_api_key
-GFW_API_KEY=your_global_forest_watch_api_key
-NOAA_API_KEY=your_noaa_ncei_api_token
-# Add other API keys as needed
+
+# MongoDB (local ou Docker)
+MONGODB_URI=mongodb://localhost:27017/bio_scan_db
+
+# NASA FIRMS — obrigatória para sincronizar e expor incêndios
+# Pedido em: https://firms.modaps.eosdis.nasa.gov/api/map_key
+MAP_KEY=sua_map_key_aqui
 ```
 
-### Installation
+Opcional:
 
-#### Without Docker
+- **`FIRMS_SYNC_MAX_RECORDS`** — em **testes**, o Jest define um limite por defeito para não processar CSV mundial completo; em **produção** normalmente **não** defines esta variável (processa todos os registos devolvidos).
+
+---
+
+## Como correr
+
+**Requisitos:** Node.js 18+ recomendado, MongoDB acessível.
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server
-npm run dev
-
-# Start production server
+npm run dev    # nodemon + ts-node para módulos .ts
+# ou
 npm start
 ```
 
-#### With Docker
+**Docker:** `docker-compose up --build` (app + MongoDB; repassa `MAP_KEY` do ambiente do host).
 
-```bash
-# Build and start the container
-docker-compose up --build
+---
 
-# Run in background
-docker-compose up -d
+## API HTTP (backend)
+
+### Incêndios (dados sincronizados no MongoDB — ideal para o globo)
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/fires` | Lista pontos da coleção `nasa_fire`. Query: `limit`, `source`, `startDate`, `endDate` (YYYY-MM-DD). |
+| `GET` | `/api/fires/by-country` | FIRMS por país (hoje via **bbox** interna; códigos ISO3 suportados estão em `COUNTRY_BBOX` em `NasaFireTypes.ts`). |
+| `GET` | `/api/fires/sync-status` | Estado do job de sincronização. |
+| `POST` | `/api/fires/sync` | Corpo opcional: `{ "source": "MODIS_NRT" \| "VIIRS_SNPP_NRT" \| "VIIRS_NOAA20_NRT" }`. |
+
+### Outros
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/api/global-temperature` | Dados GISTEMP (conforme rotas do módulo). |
+| `GET` | `/api/ice-melt` | Dados de variação do nível do mar (cliente atual). |
+| `GET` | `/health` | Saúde da API, MongoDB e estado dos syncs expostos. |
+
+Rotas ainda não implementadas podem devolver `501` com mensagem explicativa.
+
+---
+
+## Estrutura relevante do código
+
+```
+src/
+├── index.js                          # Express, MongoDB, montagem das rotas NASA
+├── infrastructure/apis/NASA/
+│   ├── NasaFire/                     # FIRMS: serviço, modelo, controlador, rotas
+│   ├── NasaGistemp/
+│   └── NasaSeaLevel/
+├── infrastructure/apis/              # Outros clientes (GFW, Copernicus, …)
+└── __tests__/                        # Jest + ts-jest; ver src/__tests__/README.md
 ```
 
-## 📚 API Documentation
+Documentação detalhada por módulo: `src/infrastructure/apis/NASA/NasaFire/README.md`, `src/infrastructure/apis/NASA/README.md`.
 
-### Available Endpoints
+---
 
-- `GET /api/fires` - Get active fires data
-- `GET /api/fires/by-region?region={region}` - Get fires data by region
-- `GET /api/deforestation` - Get deforestation data
-- `GET /api/ocean-pollution` - Get ocean pollution data
-- `GET /api/global-temperature` - Get global temperature data
-- `GET /api/ice-melt` - Get ice melt data
-- `GET /api/extinction` - Get endangered species data
+## Próximos passos (integração contínua)
 
-### Health Check
+1. **FIRMS:** monitorizar quotas NASA; alargar `COUNTRY_BBOX` ou alternativa GeoJSON quando o endpoint país voltar a estar estável.
+2. **Camadas para o globo:** definir para cada fonte um **contrato mínimo** (`type`, `lat`, `lon`, `recordedAt`, `sourceId`) — possível evolução para endpoint agregado tipo `/api/globe/layers`.
+3. **Prioridade sugerida:** poluição marinha / lixo (fontes públicas), gelo e nível do mar (NSIDC, NASA), desmatamento (GFW ou Copernicus), espécies (IUCN onde a licença permitir).
+4. **Qualidade:** paginação em listas grandes, cache ou tiles para muitos pontos, autenticação se a API passar a ser pública na Internet.
 
-- `GET /health` - API health status
+---
 
-## 🔧 Development
+## Licença
 
-The project follows a clean architecture pattern with the following structure:
-
-```
-bioscan-backend/
-├── src/
-│   ├── domain/           # Business entities and use cases
-│   ├── application/      # Services and controllers
-│   ├── infrastructure/   # External APIs, configurations
-│   │   ├── NASA/
-│   │   ├── GlobalForestWatch/
-│   │   ├── IUCNRedList/
-│   │   ├── NSIDC/
-│   │   ├── MarineDebrisTracker/
-│   │   ├── Copernicus/
-│   │   └── OpenWeatherMap/
-│   ├── interfaces/       # Routes and middleware
-│   └── index.js          # Entry point
-├── Dockerfile
-├── docker-compose.yml
-└── package.json
-```
-
-## 📝 License
-
-This project is licensed under the ISC License. 
+ISC License.
