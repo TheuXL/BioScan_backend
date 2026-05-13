@@ -15,8 +15,12 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - MONGODB_URI=mongodb://mongodb:27017/BioScanDB
+      - MAP_KEY=${MAP_KEY}
       - OPENAQ_API_KEY=${OPENAQ_API_KEY}
       - GFW_API_KEY=${GFW_API_KEY}
+      - GFW_API_ORIGIN=${GFW_API_ORIGIN}
+      - SEA_LEVEL_DATA_URL=${SEA_LEVEL_DATA_URL}
+      - SEA_LEVEL_ALLOW_BUNDLED_FALLBACK=${SEA_LEVEL_ALLOW_BUNDLED_FALLBACK}
     command: npm run dev
     restart: unless-stopped
     depends_on:

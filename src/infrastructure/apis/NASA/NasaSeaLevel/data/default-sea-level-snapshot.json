@@ -1,0 +1,11 @@
+{
+  "_bioScanFallback": true,
+  "_bioScanNote": "Snapshot ilustrativo quando todas as fontes HTTP falham (tipicamente em desenvolvimento). Em produção defina SEA_LEVEL_DATA_URL com JSON ou texto acessível (ex.: série GMSL NASA/PO.DAAC ou espelho próprio).",
+  "indicator": "bioscan-sea-level-placeholder",
+  "unit": "mm (valores de exemplo, não substituem séries oficiais)",
+  "points": [
+    { "date": "2020-01-01", "valueMm": 91.0 },
+    { "date": "2021-01-01", "valueMm": 93.0 },
+    { "date": "2022-01-01", "valueMm": 95.0 }
+  ]
+}

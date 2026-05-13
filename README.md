@@ -46,20 +46,20 @@ Cada nova fonte pública deve seguir o mesmo padrão: **cliente HTTP → serviç
 ### Outras peças no repositório (grau de maturidade variável)
 
 - **Temperatura global (GISTEMP):** módulo TypeScript em `NasaGistemp/` com rotas dedicadas (sincronização e leitura conforme implementação atual).
-- **Nível do mar / degelo (proxy):** rotas `NasaSeaLevel/` em `/api/ice-melt` (live, latest, sync).
+- **Nível do mar / degelo (proxy):** rotas `NasaSeaLevel/` em `/api/ice-melt` (live, latest, sync). Ordem de fontes: `SEA_LEVEL_DATA_URL` → Climate Tools → fallback NASA CMR → snapshot empacotado em dev (ver `NasaSeaLevel/README.md`).
 - **Meteorologia contextual (Open-Meteo):** proxy on-demand sem chave em `/api/meteo` (`forecast`, `archive`, `air-quality`) — ver `src/infrastructure/apis/OpenMeteo/`.
 - **Sismos (USGS):** proxy GeoJSON on-demand em `/api/earthquakes` e `/api/earthquakes/feed/:window` — ver `src/infrastructure/apis/UsgsEarthquake/`.
 - **Eventos naturais (NASA EONET):** proxy on-demand em `/api/events` (v2.1) — ver `src/infrastructure/apis/NASA/NasaEonet/`.
 - **Qualidade do ar (OpenAQ v3):** proxy com `OPENAQ_API_KEY` em `/api/openaq` — ver `src/infrastructure/apis/OpenAq/`.
 - **Desmatamento / GFW (Data API):** proxy em `/api/deforestation`; consultas SQL com `GFW_API_KEY` — ver `src/infrastructure/apis/GlobalForestWatch/`.
-- **Stubs / clientes legados:** `Copernicus`, `IUCNRedList`, `NSIDC`, `MarineDebrisTracker`, `OpenWeatherMap` — estrutura preparada; integração completa e persistência para o globo são **próximas fases**.
-- **Rotas placeholder:** `GET /api/ocean-pollution`, `GET /api/extinction` podem responder `501` até haver implementação.
+- **Poluição marinha / lixo (EPA R9):** proxy ArcGIS público em `/api/ocean-pollution` — ver `src/infrastructure/apis/OceanPollution/`.
+- **Rotas placeholder:** `GET /api/extinction` pode responder `501` até haver implementação.
 
 ---
 
 ## Variáveis de ambiente
 
-Cria um ficheiro `.env` na raiz do projeto:
+Cria um ficheiro `.env` na raiz do projeto (podes partir de `.env.example`):
 
 ```env
 PORT=3000
@@ -79,11 +79,17 @@ OPENAQ_API_KEY=
 GFW_API_KEY=
 # Origin enviado com a chave (deve coincidir com os "domains" da key na GFW); p.ex. http://localhost ou https://api.teudominio.com
 # GFW_API_ORIGIN=http://localhost
+
+# Nível do mar — ver src/infrastructure/apis/NASA/NasaSeaLevel/README.md
+# SEA_LEVEL_DATA_URL=https://...
+# SEA_LEVEL_ALLOW_BUNDLED_FALLBACK=false
 ```
 
 Opcional:
 
 - **`FIRMS_SYNC_MAX_RECORDS`** — em **testes**, o Jest define um limite por defeito para não processar CSV mundial completo; em **produção** normalmente **não** defines esta variável (processa todos os registos devolvidos).
+- **`SEA_LEVEL_DATA_URL`** — URL JSON/txt para `/api/ice-melt` (recomendado se o arranque falhar sem rede aos defaults).
+- **`SEA_LEVEL_ALLOW_BUNDLED_FALLBACK`** — `false` para não usar o snapshot empacotado em desenvolvimento; em `production` o empacotado só entra se `true`.
 
 ---
 
@@ -98,7 +104,7 @@ npm run dev    # nodemon + ts-node para módulos .ts
 npm start
 ```
 
-**Docker:** `docker-compose up --build` (app + MongoDB; o `docker-compose.yml` repassa `OPENAQ_API_KEY` e `GFW_API_KEY` do host; para incêndios FIRMS adiciona `MAP_KEY` ao bloco `environment` se precisares disso dentro do contentor).
+**Docker:** `docker-compose up --build` — o serviço `app` repassa do host: `MAP_KEY`, `OPENAQ_API_KEY`, `GFW_API_KEY`, `GFW_API_ORIGIN`, `SEA_LEVEL_DATA_URL`, `SEA_LEVEL_ALLOW_BUNDLED_FALLBACK` (opcionais; ver `.env.example`).
 
 ---
 
@@ -127,9 +133,10 @@ npm start
 | `GET` | `/api/events/*` | NASA EONET v2.1. |
 | `GET` | `/api/openaq/*` | OpenAQ v3 (requer `OPENAQ_API_KEY`). |
 | `GET` | `/api/deforestation/*` | GFW Data API (`GFW_API_KEY` para `.../query/json`). |
+| `GET` | `/api/ocean-pollution/*` | EPA R9 Marine Debris (ArcGIS → GeoJSON; sem chave). |
 | `GET` | `/health` | Saúde da API, MongoDB e estado dos syncs expostos. |
 
-Rotas `501`: `GET /api/ocean-pollution`, `GET /api/extinction` (ainda placeholders).
+Rotas `501`: `GET /api/extinction` (ainda placeholder).
 
 ---
 
@@ -143,6 +150,7 @@ src/
 │   ├── NasaGistemp/
 │   └── NasaSeaLevel/
 ├── infrastructure/apis/GlobalForestWatch/  # GFW Data API → /api/deforestation
+├── infrastructure/apis/OceanPollution/     # EPA R9 ArcGIS → /api/ocean-pollution
 ├── infrastructure/apis/              # Outros clientes (Copernicus, …)
 └── __tests__/                        # Jest + ts-jest; ver src/__tests__/README.md
 ```
@@ -155,7 +163,7 @@ Documentação detalhada por módulo: `src/infrastructure/apis/NASA/NasaFire/REA
 
 1. **FIRMS:** monitorizar quotas NASA; alargar `COUNTRY_BBOX` ou alternativa GeoJSON quando o endpoint país voltar a estar estável.
 2. **Camadas para o globo:** definir para cada fonte um **contrato mínimo** (`type`, `lat`, `lon`, `recordedAt`, `sourceId`) — possível evolução para endpoint agregado tipo `/api/globe/layers`.
-3. **Prioridade sugerida:** poluição marinha / lixo (fontes públicas), gelo e nível do mar (NSIDC, NASA), mais produtos Copernicus, espécies (IUCN onde a licença permitir).
+3. **Prioridade sugerida:** `GET /api/extinction` (IUCN onde a licença permitir), gelo e nível do mar (NSIDC, NASA), mais produtos Copernicus; alargar **ocean-pollution** com mais fontes públicas se necessário.
 4. **Qualidade:** paginação em listas grandes, cache ou tiles para muitos pontos, autenticação se a API passar a ser pública na Internet.
 
 ---

@@ -40,3 +40,11 @@ npm test -- src/__tests__/GlobalForestWatch/GlobalForestWatch.test.js
 ## Stub legado
 
 O ficheiro `GlobalForestWatchApi.js` na mesma pasta é **legado**; usar este módulo TypeScript.
+
+## Checklist (produção)
+
+1. **`GFW_API_KEY`** (ou `GFW_DATA_API_KEY`) nas variáveis do runtime — nunca no frontend nem em repositório público.
+2. **`GFW_API_ORIGIN`** igual a um dos **domains** registados na criação da key na GFW; em produção evita depender só do defeito `http://localhost`.
+3. **`GET /health`** — confirmar `globalForestWatch.hasApiKey: true` e, se usares key restrita a domínios, `apiOriginEnvSet: true` (e `usingDefaultGfwOrigin: false`).
+4. **Raster** (`gfw_integrated_alerts`, etc.): consultas SQL exigem **`geostore_id`** onde a GFW o exigir; datasets vetoriais não.
+5. **Testes:** `npm test -- src/__tests__/GlobalForestWatch/GlobalForestWatch.test.js` (com chave no `.env` para cobrir `query/json`).

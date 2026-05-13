@@ -25,6 +25,8 @@ const { OpenAqService, resolveOpenAqApiKey } = require('./infrastructure/apis/Op
 const { createOpenAqRoutes } = require('./infrastructure/apis/OpenAq/OpenAqRoutes');
 const { GlobalForestWatchService } = require('./infrastructure/apis/GlobalForestWatch/GlobalForestWatchService');
 const { createGlobalForestWatchRoutes } = require('./infrastructure/apis/GlobalForestWatch/GlobalForestWatchRoutes');
+const { OceanPollutionService } = require('./infrastructure/apis/OceanPollution/OceanPollutionService');
+const { createOceanPollutionRoutes } = require('./infrastructure/apis/OceanPollution/OceanPollutionRoutes');
 
 const app = express();
 
@@ -62,6 +64,11 @@ const globalForestWatchService = new GlobalForestWatchService();
 const globalForestWatchRouter = express.Router();
 app.use('/api/deforestation', createGlobalForestWatchRoutes(globalForestWatchRouter, globalForestWatchService));
 app.locals.globalForestWatchService = globalForestWatchService;
+
+const oceanPollutionService = new OceanPollutionService();
+const oceanPollutionRouter = express.Router();
+app.use('/api/ocean-pollution', createOceanPollutionRoutes(oceanPollutionRouter, oceanPollutionService));
+app.locals.oceanPollutionService = oceanPollutionService;
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bio_scan_db')
@@ -110,10 +117,6 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bio_scan_
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Placeholder routes for other APIs mentioned in README.md
-app.get('/api/ocean-pollution', (req, res) => {
-  res.status(501).json({ message: 'Ocean Pollution API not yet implemented.' });
-});
-
 app.get('/api/extinction', (req, res) => {
   res.status(501).json({ message: 'Endangered Species API not yet implemented.' });
 });
@@ -124,6 +127,11 @@ app.get('/health', (req, res) => {
   const fireSyncStatus = app.locals.nasaFireService ? app.locals.nasaFireService.getSyncStatus() : null;
   const gistempSyncStatus = app.locals.nasaGistempService ? app.locals.nasaGistempService.getSyncStatus() : null;
   const seaLevelSyncStatus = app.locals.nasaSeaLevelService ? app.locals.nasaSeaLevelService.getSyncStatus() : null;
+
+  const gfwHasKey = app.locals.globalForestWatchService
+    ? app.locals.globalForestWatchService.hasApiKey()
+    : false;
+  const gfwOriginEnvSet = Boolean(process.env.GFW_API_ORIGIN?.trim());
 
   res.status(200).json({
     status: 'healthy',
@@ -141,10 +149,20 @@ app.get('/health', (req, res) => {
       mode: 'on-demand',
       basePath: '/api/deforestation',
       queryRequiresKey: true,
-      hasApiKey: app.locals.globalForestWatchService
-        ? app.locals.globalForestWatchService.hasApiKey()
-        : false,
-      apiOriginEnvSet: Boolean(process.env.GFW_API_ORIGIN?.trim())
+      hasApiKey: gfwHasKey,
+      apiOriginEnvSet: gfwOriginEnvSet,
+      usingDefaultGfwOrigin: gfwHasKey && !gfwOriginEnvSet,
+      ...(gfwHasKey && !gfwOriginEnvSet
+        ? {
+            hint:
+              'Defina GFW_API_ORIGIN com um host permitido na API key da GFW (por defeito envia-se Origin http://localhost).'
+          }
+        : {})
+    },
+    oceanPollution: {
+      mode: 'on-demand',
+      basePath: '/api/ocean-pollution',
+      source: 'EPA R9 Marine Debris (ArcGIS REST)'
     }
   });
 });

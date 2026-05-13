@@ -1,5 +1,6 @@
 /**
- * Placeholder for Marine Debris Tracker (NOAA) API client.
+ * @deprecated Usar o módulo TypeScript `OceanPollution` e rotas `GET /api/ocean-pollution/*`
+ * (proxy EPA R9 ArcGIS — ver `src/infrastructure/apis/OceanPollution/`).
  */
 class MarineDebrisTrackerApi {
   constructor() {
@@ -7,7 +8,7 @@ class MarineDebrisTrackerApi {
   }
 
   async getData() {
-    // Implement data fetching logic here
+    throw new Error('Use o módulo OceanPollution (TypeScript) e GET /api/ocean-pollution/*.');
   }
 }
 

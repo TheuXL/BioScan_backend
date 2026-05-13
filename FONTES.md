@@ -46,8 +46,8 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | Campo | Detalhe |
 |-------|---------|
 | **O que traz** | Séries de **nível médio global do mar** (proxy via API pública agregada); relacionado com **degelo / oceano**. |
-| **API / doc** | [Climate Tools](https://api.climatetools.org/sea-level) · [NASA Sea Level](https://sealevel.nasa.gov/data/) |
-| **Resumo** | HTTP JSON; sem chave; serviço pode ter indisponibilidade pontual (503). |
+| **API / doc** | [Climate Tools](https://api.climatetools.org/sea-level) (DNS instável) · [NASA CMR](https://cmr.earthdata.nasa.gov/search) (fallback metadados) · [NASA Sea Level](https://sealevel.nasa.gov/data/) |
+| **Resumo** | Ordem: `SEA_LEVEL_DATA_URL` → Climate Tools → CMR; snapshot empacotado em dev se tudo falhar. Sem chave. |
 | **Entrega** | **JSON** (estrutura do fornecedor; guardada como `Mixed` em MongoDB). |
 | **Uso BioScan** | `GET /api/ice-melt` (live), `GET /api/ice-melt/latest`, `POST /api/ice-melt/sync`, coleção `nasa_sea_level`. |
 | **Globo** | Curva temporal ou indicador; não pontos por incêndio. |
@@ -101,6 +101,16 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Resumo** | REST + JSON; `query/json` exige **`x-api-key`**; `ping` / `datasets` / `fields` usáveis sem chave (comportamento atual). |
 | **Uso BioScan** | Módulo `GlobalForestWatch/` — `GET /api/deforestation` (info), `/ping`, `/datasets`, `/dataset/.../fields`, `/dataset/.../query/json`. |
 | **Globo** | Resultados de SQL / geostore conforme produto escolhido; respeitar termos e limites GFW. |
+
+### EPA R9 — Marine Debris (lixo marinho / observações)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | Observações de **lixo marinho** (pontos, atributos EPA) em MapServers públicos. |
+| **API / doc** | [ArcGIS REST — R9MarineDebris](https://gispub.epa.gov/arcgis/rest/services/R9MarineDebris) |
+| **Resumo** | ArcGIS REST; **sem chave**; `query` com `f=geojson`. |
+| **Uso BioScan** | Módulo `OceanPollution/` — `GET /api/ocean-pollution`, `/epa-r9/:dataset/metadata`, `/epa-r9/:dataset/layers/:layerId/geojson`. |
+| **Globo** | **GeoJSON** com `Point` — marcadores no globo. |
 
 ---
 
@@ -230,6 +240,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Nível do mar / degelo (séries)** | NASA Sea Level, NOAA | Curvas / KPI |
 | **Gelo / neve** | NSIDC | Camada ou série |
 | **Floresta / desmatamento** | GFW Data API (já: `/api/deforestation`) | SQL / alertas / polígonos (geostore) |
+| **Lixo marinho / observações** | EPA R9 ArcGIS (já: `/api/ocean-pollution`) | Pontos (GeoJSON) |
 | **Satélite “Earth view”** | GIBS | Tiles |
 | **Uso do solo** | WorldCover | Raster colorido |
 | **Meteo local** | Open-Meteo (já: `/api/meteo`) | Tooltip / camada leve |
