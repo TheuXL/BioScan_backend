@@ -1,13 +1,11 @@
 /**
- * Placeholder for Global Forest Watch API client.
+ * @deprecated Use o módulo TypeScript (`GlobalForestWatchService`, `createGlobalForestWatchRoutes`) e `/api/deforestation`.
  */
 class GlobalForestWatchApi {
-  constructor() {
-    // Initialize with necessary configurations
-  }
+  constructor() {}
 
   async getData() {
-    // Implement data fetching logic here
+    throw new Error('Use GlobalForestWatchService (TypeScript) e rotas /api/deforestation.');
   }
 }
 
