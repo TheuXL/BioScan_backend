@@ -46,11 +46,81 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | Campo | Detalhe |
 |-------|---------|
 | **O que traz** | Séries de **nível médio global do mar** (proxy via API pública agregada); relacionado com **degelo / oceano**. |
-| **API / doc** | [Climate Tools](https://api.climatetools.org/sea-level) · [NASA Sea Level](https://sealevel.nasa.gov/data/) |
-| **Resumo** | HTTP JSON; sem chave; serviço pode ter indisponibilidade pontual (503). |
+| **API / doc** | [Climate Tools](https://api.climatetools.org/sea-level) (DNS instável) · [NASA CMR](https://cmr.earthdata.nasa.gov/search) (fallback metadados) · [NASA Sea Level](https://sealevel.nasa.gov/data/) |
+| **Resumo** | Ordem: `SEA_LEVEL_DATA_URL` → Climate Tools → CMR; snapshot empacotado em dev se tudo falhar. Sem chave. |
 | **Entrega** | **JSON** (estrutura do fornecedor; guardada como `Mixed` em MongoDB). |
 | **Uso BioScan** | `GET /api/ice-melt` (live), `GET /api/ice-melt/latest`, `POST /api/ice-melt/sync`, coleção `nasa_sea_level`. |
 | **Globo** | Curva temporal ou indicador; não pontos por incêndio. |
+
+### Open-Meteo (meteorologia contextual)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | **Tempo atual / previsão**, arquivo histórico, **qualidade do ar** (API dedicada); sem chave no tier gratuito. |
+| **API / doc** | [Open-Meteo](https://open-meteo.com/en/docs) · [Archive](https://open-meteo.com/en/docs/historical-weather-api) · [Air quality](https://open-meteo.com/en/docs/air-quality-api) |
+| **Resumo** | Modelos ECMWF/GFS; parâmetros por `latitude` e `longitude`; entrega **JSON**. |
+| **Uso BioScan** | Módulo `OpenMeteo/` — proxy on-demand: `GET /api/meteo/forecast`, `GET /api/meteo/archive`, `GET /api/meteo/air-quality` (sem MongoDB). |
+| **Globo** | Contexto local ao clicar no globo ou camada “meteo”; não substitui séries longas (GISTEMP). |
+
+### USGS Earthquakes (sismos)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | **Sismos** (magnitude, profundidade, tempo, epicentro). |
+| **API / doc** | [USGS FDSNWS Event](https://earthquake.usgs.gov/fdsnws/event/1/) · [Feeds GeoJSON](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php) |
+| **Resumo** | Consulta por janela temporal, magnitude, bbox; **GeoJSON**; serviço público. |
+| **Uso BioScan** | Módulo `UsgsEarthquake/` — `GET /api/earthquakes`, `GET /api/earthquakes/feed/:window` (sem MongoDB). |
+| **Globo** | **Pontos**; tamanho/cor por magnitude; profundidade em tooltip. |
+
+### NASA EONET (eventos naturais)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | **Incêndios, tempestades, vulcões, gelo, inundações**, etc. — eventos georreferenciados. |
+| **API / doc** | [EONET v2.1](https://eonet.gsfc.nasa.gov/docs/v2.1) |
+| **Resumo** | Categorias, fontes, camadas WMS/WMTS; geometrias GeoJSON (Point/Polygon); API pública NASA. |
+| **Uso BioScan** | Módulo `NasaEonet/` — `GET /api/events`, `/categories`, `/sources`, `/layers` (sem MongoDB). |
+| **Globo** | Pontos, polígonos ou linhas por tipo; camadas toggláveis junto com FIRMS. |
+
+### OpenAQ (qualidade do ar — estações, API v3)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | Medições e metadados de **PM2.5, PM10, O₃, NO₂**, etc., em **locais** com coordenadas. |
+| **API / doc** | [OpenAQ v3](https://docs.openaq.org/about/about) · [Chave API](https://docs.openaq.org/using-the-api/api-key) |
+| **Resumo** | REST + JSON; **chave** no cabeçalho `X-API-Key`; variável `OPENAQ_API_KEY` no backend. v1/v2 retirados. |
+| **Uso BioScan** | Módulo `OpenAq/` — `GET /api/openaq/locations`, `/locations/:id`, `/locations/:id/latest`, `/countries`, `/parameters`. |
+| **Globo** | **Pontos** por estação; complementa Open-Meteo (modelo vs medições in situ). |
+
+### Global Forest Watch — Data API (desmatamento / alertas)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | Datasets e **consultas SQL** sobre alertas (ex.: integrados), metadados de campos, catálogo de datasets. |
+| **API / doc** | [GFW Data API](https://data-api.globalforestwatch.org/) · [Developers](https://www.globalforestwatch.org/help/developers/) |
+| **Resumo** | REST + JSON; `query/json` exige **`x-api-key`**; `ping` / `datasets` / `fields` usáveis sem chave (comportamento atual). |
+| **Uso BioScan** | Módulo `GlobalForestWatch/` — `GET /api/deforestation` (info), `/ping`, `/datasets`, `/dataset/.../fields`, `/dataset/.../query/json`. |
+| **Globo** | Resultados de SQL / geostore conforme produto escolhido; respeitar termos e limites GFW. |
+
+### EPA R9 — Marine Debris (lixo marinho / observações)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | Observações de **lixo marinho** (pontos, atributos EPA) em MapServers públicos. |
+| **API / doc** | [ArcGIS REST — R9MarineDebris](https://gispub.epa.gov/arcgis/rest/services/R9MarineDebris) |
+| **Resumo** | ArcGIS REST; **sem chave**; `query` com `f=geojson`. |
+| **Uso BioScan** | Módulo `OceanPollution/` — `GET /api/ocean-pollution`, `/epa-r9/:dataset/metadata`, `/epa-r9/:dataset/layers/:layerId/geojson`. |
+| **Globo** | **GeoJSON** com `Point` — marcadores no globo. |
+
+### GBIF — ocorrências com categorias Lista Vermelha IUCN (índice GBIF)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | Milhões de **ocorrências** de espécies com coordenadas; muitas com categoria **Lista Vermelha** (ex.: CR, EN, VU) indexada pelo GBIF (não substitui licenciamento comercial da IUCN). |
+| **API / doc** | [GBIF Occurrence API](https://www.gbif.org/developer/occurrence) · [Citação](https://www.gbif.org/citation-guidelines) |
+| **Resumo** | REST + JSON; **sem chave** para volumes moderados; usar com **User-Agent** identificável e respeitar políticas GBIF. |
+| **Uso BioScan** | Módulo `Extinction/` — sincronização paginada → MongoDB `extinction_gbif_occurrence`; `GET /api/extinction`, `/sync-status`, `POST /sync`. |
+| **Globo** | Um ponto por ocorrência (`latitude`/`longitude`); legenda por `iucnRedListCategory`. |
 
 ---
 
@@ -58,47 +128,19 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 
 ### NASA EONET (eventos naturais)
 
-| Campo | Detalhe |
-|-------|---------|
-| **O que traz** | **Incêndios, tempestades, vulcões, gelo, inundações**, etc. — eventos georreferenciados. |
-| **API / doc** | [EONET API](https://eonet.gsfc.nasa.gov/) |
-| **Resumo** | Categorias e eventos com geometria; atualização contínua; uso público conforme termos NASA. |
-| **Entrega** | **JSON** (GeoJSON-like / coordenadas nos eventos). |
-| **Uso BioScan** | Novo módulo: sync opcional → MongoDB → `GET /api/events` ou por categoria. |
-| **Globo** | **Pontos, polígonos ou linhas** por tipo de evento; camadas toggláveis junto com FIRMS. |
+*Integrado — ver secção **Já integradas** (`NasaEonet/`, `/api/events`).*
 
 ### USGS Earthquakes (sismos)
 
-| Campo | Detalhe |
-|-------|---------|
-| **O que traz** | **Sismos** (magnitude, profundidade, tempo, epicentro). |
-| **API / doc** | [USGS FDSNWS Event](https://earthquake.usgs.gov/fdsnws/event/1/) |
-| **Resumo** | Parâmetros de tempo, magnitude, região; formato **GeoJSON**; serviço público. |
-| **Entrega** | **GeoJSON**, CSV, KML, etc. |
-| **Uso BioScan** | Polling ou pedidos por janela temporal → guardar ou proxy → `GET /api/earthquakes`. |
-| **Globo** | **Pontos**; tamanho/cor = magnitude; profundidade em tooltip ou eixo Z simbólico. |
+*Integrado — ver secção **Já integradas** (`UsgsEarthquake/`, `/api/earthquakes`).*
 
-### OpenAQ (qualidade do ar)
+### OpenAQ (estações — API v3)
 
-| Campo | Detalhe |
-|-------|---------|
-| **O que traz** | Medições de **PM2.5, PM10, O₃, NO₂**, etc., em estações **com coordenadas**. |
-| **API / doc** | [OpenAQ API](https://docs.openaq.org/) |
-| **Resumo** | API REST; registo pode exigir token conforme versão/plano; ver limites atuais. |
-| **Entrega** | **JSON** (localizações + medições). |
-| **Uso BioScan** | Agregar por região ou últimas N horas → coleção própria ou cache. |
-| **Globo** | **Pontos** ou heatmap por poluente; ideal para “saúde + ambiente”. |
+*Integrado — ver secção **Já integradas** (`OpenAq/`, `/api/openaq`).*
 
-### Open-Meteo (meteorologia)
+### Open-Meteo
 
-| Campo | Detalhe |
-|-------|---------|
-| **O que traz** | **Tempo atual / previsão**, histórico, em alguns casos **qualidade do ar**; sem chave no tier gratuito. |
-| **API / doc** | [Open-Meteo](https://open-meteo.com/en/docs) |
-| **Resumo** | Modelos ECMRF/GFS; parâmetros por `latitude` e `longitude`. |
-| **Entrega** | **JSON**. |
-| **Uso BioScan** | On-demand ao clicar no globo ou camada “meteo contextual”. |
-| **Globo** | Não substitui séries climáticas longas (GISTEMP); útil para **contexto local** ou animação leve. |
+*Integrado — ver secção **Já integradas** (`OpenMeteo/`, `/api/meteo`).*
 
 ---
 
@@ -169,14 +211,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 
 ### Global Forest Watch (desmatamento)
 
-| Campo | Detalhe |
-|-------|---------|
-| **O que traz** | **Alertas de desmatamento**, perda de cobertura florestal. |
-| **API / doc** | [GFW Developer Resources](https://www.globalforestwatch.org/help/developers/) |
-| **Resumo** | Muitas vezes **API com chave** e termos de uso restritos; validar licença comercial. |
-| **Entrega** | **JSON** / tiles em alguns produtos. |
-| **Uso BioScan** | Stub `GlobalForestWatchApi.js`; definir produto e chave. |
-| **Globo** | **Polígonos ou pontos de alerta**; muito alinhado à narrativa ambiental. |
+*Integrado — ver secção **Já integradas** (`GlobalForestWatch/`, `/api/deforestation`).*
 
 ### IUCN Red List (espécies ameaçadas)
 
@@ -209,17 +244,18 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 |------|-------------------|----------------|
 | **Fogo** | FIRMS (já), EONET | Pontos |
 | **Temperatura global** | GISTEMP (já) | Gráfico / painel |
-| **Sismos** | USGS | Pontos |
-| **Eventos naturais vários** | EONET | Pontos / geometrias |
-| **Ar poluído** | OpenAQ | Pontos / heatmap |
+| **Sismos** | USGS (já: `/api/earthquakes`) | Pontos |
+| **Eventos naturais vários** | EONET (já: `/api/events`) | Pontos / geometrias |
+| **Ar poluído** | OpenAQ v3 (já: `/api/openaq`) | Pontos / heatmap |
 | **Nível do mar / degelo (séries)** | NASA Sea Level, NOAA | Curvas / KPI |
 | **Gelo / neve** | NSIDC | Camada ou série |
-| **Floresta / desmatamento** | GFW | Alertas / polígonos |
+| **Floresta / desmatamento** | GFW Data API (já: `/api/deforestation`) | SQL / alertas / polígonos (geostore) |
+| **Lixo marinho / observações** | EPA R9 ArcGIS (já: `/api/ocean-pollution`) | Pontos (GeoJSON) |
+| **Espécies em risco (ocorrências)** | GBIF + IUCN no índice (já: `/api/extinction`) | Pontos / clusters |
 | **Satélite “Earth view”** | GIBS | Tiles |
 | **Uso do solo** | WorldCover | Raster colorido |
-| **Meteo local** | Open-Meteo | Tooltip / camada leve |
-
----
+| **Meteo local** | Open-Meteo (já: `/api/meteo`) | Tooltip / camada leve |
+| **Ar (estações)** | OpenAQ v3 (já: `/api/openaq`) | Pontos / heatmap |
 
 ## Manutenção deste ficheiro
 

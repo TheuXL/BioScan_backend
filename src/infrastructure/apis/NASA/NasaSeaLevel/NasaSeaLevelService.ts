@@ -1,4 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as cron from 'node-cron';
 import {
   API_CONFIG,
@@ -65,7 +67,9 @@ export class NasaSeaLevelService {
         : String(lastErr);
     return (
       `Could not fetch sea level data from any URL. Last error: ${tail}. ` +
-      `Tried: ${urls.join(', ')}. Set SEA_LEVEL_DATA_URL in .env to a reachable JSON or text URL (e.g. NASA PO.DAAC after Earthdata login).`
+      `Tried: ${urls.join(', ')}. Set SEA_LEVEL_DATA_URL in .env to a reachable JSON or text URL. ` +
+      `In development/test, a bundled snapshot is used if SEA_LEVEL_ALLOW_BUNDLED_FALLBACK is not false. ` +
+      `In production, set SEA_LEVEL_DATA_URL or SEA_LEVEL_ALLOW_BUNDLED_FALLBACK=true (not recommended for science use).`
     );
   }
 
@@ -97,7 +101,40 @@ export class NasaSeaLevelService {
       }
     }
 
+    const bundled = this.tryReadBundledFallback();
+    if (bundled !== null) {
+      console.warn(
+        '[ice-melt] Todas as fontes HTTP falharam — a usar snapshot empacotado (desenvolvimento). ' +
+          'Defina SEA_LEVEL_DATA_URL no .env com um URL JSON/txt acessível para dados reais (ex.: NASA PO.DAAC / espelho).'
+      );
+      return this.normalizeBody(bundled, 'bundled://default-sea-level-snapshot.json');
+    }
+
     throw new Error(this.formatAggregateError(lastErr, urls));
+  }
+
+  /**
+   * Último recurso: JSON versionado no repo. Ativo em `development` / `test` por defeito;
+   * em `production` só se `SEA_LEVEL_ALLOW_BUNDLED_FALLBACK=true`.
+   * Desativar: `SEA_LEVEL_ALLOW_BUNDLED_FALLBACK=false`.
+   */
+  private tryReadBundledFallback(): unknown | null {
+    const explicit = process.env.SEA_LEVEL_ALLOW_BUNDLED_FALLBACK?.trim().toLowerCase();
+    if (explicit === 'false' || explicit === '0') {
+      return null;
+    }
+    const nodeEnv = process.env.NODE_ENV || 'development';
+    const allowInProd = explicit === 'true';
+    if (nodeEnv === 'production' && !allowInProd) {
+      return null;
+    }
+    try {
+      const filePath = path.join(__dirname, 'data', 'default-sea-level-snapshot.json');
+      const raw = fs.readFileSync(filePath, 'utf8');
+      return JSON.parse(raw) as unknown;
+    } catch {
+      return null;
+    }
   }
 
   /**
