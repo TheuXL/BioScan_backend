@@ -29,31 +29,109 @@ Cada nova fonte pública deve seguir o mesmo padrão: **cliente HTTP → serviç
 
 ---
 
-## Estado atual (resumo honesto)
+## Estratégia de URLs: domínio + fornecedor (globo normalizado)
 
-### Implementado e alinhado com o globo (incêndios — NASA FIRMS)
+O frontend não deve tratar dezenas de formatos JSON diferentes por instituição. Para **pontos no globo** usa-se um **contrato único** (`PontoGloboV1`): `schemaVersion`, `camada`, `count`, `pontos[]` com `lat`, `lon`, `tipo`, `momento`, `origem`, `idFonte`, `severidade`, etc.
 
-- **Fonte:** [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/) (`firms.modaps.eosdis.nasa.gov`), via endpoint **`/api/area/csv/...`** (o formato JSON da área devolve erro neste serviço; o CSV é o suportado).
-- **Autenticação:** variável de ambiente **`MAP_KEY`** (Map Key gratuita da NASA), enviada no **path** do URL, nunca ao browser.
-- **Persistência:** coleção MongoDB **`nasa_fire`**, modelo Mongoose **`NasaFire`** (`src/infrastructure/apis/NASA/NasaFire/NasaFireModels.ts`).
-- **Campos principais para o globo:** `latitude`, `longitude` (obrigatórios), mais `acq_date`, `acq_time`, `source`, `confidence`, `frp`, `daynight`, etc.
-- **Deduplicação:** campo **`fireId`** (derivado de posição + data/hora + fonte) para não duplicar a mesma deteção em sincronizações repetidas.
-- **Sincronização:** `NasaFireService.startSync()` (cron) + `POST /api/fires/sync` para disparo manual.
-- **Testes:** integração real com FIRMS e MongoDB em `src/__tests__/NasaFire/` e `src/__tests__/MongoDB/`.
+Os caminhos seguem **`/api/<domínio>/<fornecedor>`** quando o utilizador escolhe primeiro o tema e depois a organização que fornece os dados:
 
-**Uso no frontend para pontos de incêndio:** `GET /api/fires` devolve `{ count, data: [ ... ] }` onde cada elemento tem `latitude` e `longitude` — pronto para projetar no globo.
+| Domínio | Índice (`GET`) | Camada exemplo (`GET`) |
+|---------|----------------|-------------------------|
+| Fogo | `/api/fire` lista fornecedores | `/api/fire/nasa` — NASA FIRMS (via Mongo + sync). |
+| Oceano | `/api/ocean` | `/api/ocean/epa` — EPA R9 Marine Debris (ArcGIS). |
 
-### Outras peças no repositório (grau de maturidade variável)
+- **`GET /api/globe`** — índice de todas as camadas normalizadas (liga para `/api/fire/...`, `/api/ocean/...`, e mantém também `GET /api/globe/sismos` e `GET /api/globe/especies-ameacadas`).
+- **Proxies no formato bruto da fonte** mantêm prefixos próprios: **`/api/fires`** (Mongo FIRMS), **`/api/ocean-pollution`** (ArcGIS direto).
 
-- **Temperatura global (GISTEMP):** módulo TypeScript em `NasaGistemp/` com rotas dedicadas (sincronização e leitura conforme implementação atual).
-- **Nível do mar / degelo (proxy):** rotas `NasaSeaLevel/` em `/api/ice-melt` (live, latest, sync). Ordem de fontes: `SEA_LEVEL_DATA_URL` → Climate Tools → fallback NASA CMR → snapshot empacotado em dev (ver `NasaSeaLevel/README.md`).
-- **Meteorologia contextual (Open-Meteo):** proxy on-demand sem chave em `/api/meteo` (`forecast`, `archive`, `air-quality`) — ver `src/infrastructure/apis/OpenMeteo/`.
-- **Sismos (USGS):** proxy GeoJSON on-demand em `/api/earthquakes` e `/api/earthquakes/feed/:window` — ver `src/infrastructure/apis/UsgsEarthquake/`.
-- **Eventos naturais (NASA EONET):** proxy on-demand em `/api/events` (v2.1) — ver `src/infrastructure/apis/NASA/NasaEonet/`.
-- **Qualidade do ar (OpenAQ v3):** proxy com `OPENAQ_API_KEY` em `/api/openaq` — ver `src/infrastructure/apis/OpenAq/`.
-- **Desmatamento / GFW (Data API):** proxy em `/api/deforestation`; consultas SQL com `GFW_API_KEY` — ver `src/infrastructure/apis/GlobalForestWatch/`.
-- **Poluição marinha / lixo (EPA R9):** proxy ArcGIS público em `/api/ocean-pollution` — ver `src/infrastructure/apis/OceanPollution/`.
-- **Rotas placeholder:** `GET /api/extinction` pode responder `501` até haver implementação.
+Para novo fornecedor de fogo, adiciona-se `GET /api/fire/<slug>` e uma entrada no JSON de **`GET /api/fire`**; o cliente continua a consumir o mesmo tipo de resposta de pontos.
+
+---
+
+## Catálogo de endpoints e disponibilidade
+
+### Legenda
+
+| Termo | Significado |
+|-------|-------------|
+| **Completo** | Rota montada e usualmente útil só com rede; sem credenciais opcionais nem dependência de Mongo para **registar** essa rota. |
+| **Condicional** | Só existe em certas condições de arranque **ou** devolve `503`/vazio se sync/serviço upstream não estiver pronto. |
+| **Planeado** | Ainda não há rota BioScan; visão em `IDEIA.md` ou extensão natural do padrão acima. |
+
+### Condições ao arrancar o Express
+
+| Situação | Efeito |
+|----------|--------|
+| **Falha de ligação MongoDB** | Não se montam: `/api/fires`, `/api/global-temperature`, `/api/ice-melt`, `/api/extinction`. |
+| **Sem `MAP_KEY`** | Não há serviço FIRMS nem `/api/fires`. `GET /api/fire/nasa` responde **503** (contrato globo). |
+| **Sem `OPENAQ_API_KEY`** | Ramo **`/api/openaq`** não é registado. |
+| **GFW** | Rotas base de **`/api/deforestation`** existem; **`query/json`** precisa de **`GFW_API_KEY`** (+ **`GFW_API_ORIGIN`** alinhado ao domínio da key). |
+
+### Contrato único globo (`PontoGloboV1`) — preferido pelo cliente “globo”
+
+| Método | Rota | Estado | Notas |
+|--------|------|--------|-------|
+| `GET` | `/api/globe` | Completo | Índice de camadas + limites (`limit`). |
+| `GET` | `/api/globe/sismos` | Completo | Parâmetros alinhados ao USGS (`limit`, `starttime`, `endtime`, …). |
+| `GET` | `/api/globe/especies-ameacadas` | Condicional | Exige Mongo + `extinctionService` (GBIF); senão **503**. |
+| `GET` | `/api/fire` | Completo | Descoberta de fornecedores de fogo. |
+| `GET` | `/api/fire/nasa` | Condicional | **MAP_KEY**, Mongo, dados em `nasa_fire`; senão **503**. |
+| `GET` | `/api/ocean` | Completo | Descoberta de fornecedores oceânicos normalizados. |
+| `GET` | `/api/ocean/epa` | Completo | Lixo marinho EPA → pontos normalizados. |
+
+### Proxies / JSON no formato da fonte (stateless ou quase)
+
+| Método | Rotas | Estado | Notas |
+|--------|-------|--------|-------|
+| `GET` | `/api/meteo/forecast`, `/api/meteo/archive`, `/api/meteo/air-quality` | Completo | Open-Meteo, sem API key no servidor. |
+| `GET` | `/api/earthquakes`, `/api/earthquakes/feed/:window` | Completo | USGS. |
+| `GET` | `/api/events`, `/api/events/sources`, `/api/events/categories`, `/api/events/categories/:categoryId`, `/api/events/layers`, `/api/events/layers/:categoryId` | Completo | NASA EONET v2.1. |
+| `GET` | `/api/openaq/*` | Condicional | Só com `OPENAQ_API_KEY`: `/parameters`, `/countries`, `/locations`, `/locations/:id`, `/locations/:id/latest`. |
+| `GET` | `/api/deforestation`, `/api/deforestation/ping`, `/api/deforestation/datasets` | Completo / metadados | Úteis sem query pesada. |
+| `GET` | `/api/deforestation/dataset/:dataset/:version/query/json`, `.../fields` | Condicional | Dados com `GFW_API_KEY`. |
+| `GET` | `/api/ocean-pollution`, `/api/ocean-pollution/epa-r9/:dataset/metadata`, `.../layers/:layerId/geojson` | Completo | ArcGIS EPA. |
+
+### Dados em Mongo + sync (formato BioScan / séries)
+
+| Método | Rotas | Estado | Notas |
+|--------|-------|--------|-------|
+| `GET` | `/api/fires`, `/api/fires/by-country` | Condicional | Montados só com Mongo + `MAP_KEY`. |
+| `GET` | `/api/fires/sync-status` | Condicional | Idem. |
+| `POST` | `/api/fires/sync` | Condicional | Disparo manual sync FIRMS. |
+| `GET` | `/api/global-temperature`, `/api/global-temperature/stats` | Condicional | Só após Mongo; ver módulo GISTEMP. |
+| `GET` | `/api/global-temperature/sync-status` | Condicional | |
+| `POST` | `/api/global-temperature/sync` | Condicional | |
+| `GET` | `/api/ice-melt`, `/api/ice-melt/latest`, `/api/ice-melt/sync-status` | Condicional | Só após Mongo; live vs snapshot — `NasaSeaLevel/README.md`. |
+| `POST` | `/api/ice-melt/sync` | Condicional | |
+| `GET` | `/api/extinction` | Condicional | Mongo + sync GBIF (IUCN). |
+| `GET` | `/api/extinction/sync-status` | Condicional | |
+| `POST` | `/api/extinction/sync` | Condicional | |
+
+### Infraestrutura
+
+| Método | Rota | Estado |
+|--------|------|--------|
+| `GET` | `/health` | Completo — corpo reflecte Mongo, chaves e syncs. |
+
+### Detalhe: NASA FIRMS (dados crus no Mongo)
+
+- **Fonte:** [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/) (CSV por área; ver serviço).
+- **`MAP_KEY`** no path server-side; coleção **`nasa_fire`**, dedup **`fireId`**.
+- **Testes:** `src/__tests__/NasaFire/`, `src/__tests__/MongoDB/`.
+- **Globo normalizado:** preferir `GET /api/fire/nasa` (mesmos pontos, contrato `PontoGloboV1`); **`GET /api/fires`** continua para o payload legacy `{ count, data }`.
+
+### Ainda não implementado (roadmap)
+
+- Novos **`/api/fire/<org>`** além de `nasa` (estrutura de rotas e contrato prontos; falta fonte + normalização).
+- Novos **`/api/ocean/<org>`** além de `epa`.
+- Contrato **`PontoGloboV1`** para outras áreas hoje só em proxy cru (ex.: desmatamento, meteo em pontos fixos, ar).
+- **OpenAPI/Swagger**, paginação unificada, **auth** em API pública.
+- Temas em **`IDEIA.md`** sem rotas ainda (camadas satélite, mais gelo/uso do solo, etc.).
+
+### Referências de código
+
+- Globo: `src/infrastructure/apis/Globe/`
+- FIRMS: `NASA/NasaFire/`, GISTEMP / Sea level: `NASA/NasaGistemp/`, `NASA/NasaSeaLevel/`
+- Restantes módulos: pastas em `src/infrastructure/apis/` com o nome do serviço.
 
 ---
 
@@ -88,8 +166,8 @@ GFW_API_KEY=
 Opcional:
 
 - **`FIRMS_SYNC_MAX_RECORDS`** — em **testes**, o Jest define um limite por defeito para não processar CSV mundial completo; em **produção** normalmente **não** defines esta variável (processa todos os registos devolvidos).
-- **`SEA_LEVEL_DATA_URL`** — URL JSON/txt para `/api/ice-melt` (recomendado se o arranque falhar sem rede aos defaults).
-- **`SEA_LEVEL_ALLOW_BUNDLED_FALLBACK`** — `false` para não usar o snapshot empacotado em desenvolvimento; em `production` o empacotado só entra se `true`.
+- **`SEA_LEVEL_DATA_URL`** / **`SEA_LEVEL_ALLOW_BUNDLED_FALLBACK`** — ver módulo nível do mar.
+- **`EXTINCTION_GBIF_MAX_RECORDS_PER_SYNC`**, **`EXTINCTION_GBIF_PAGE_SIZE`**, **`EXTINCTION_GBIF_IUCN_CATEGORIES`** — sincronização `/api/extinction` (GBIF; sem chave).
 
 ---
 
@@ -104,39 +182,28 @@ npm run dev    # nodemon + ts-node para módulos .ts
 npm start
 ```
 
-**Docker:** `docker-compose up --build` — o serviço `app` repassa do host: `MAP_KEY`, `OPENAQ_API_KEY`, `GFW_API_KEY`, `GFW_API_ORIGIN`, `SEA_LEVEL_DATA_URL`, `SEA_LEVEL_ALLOW_BUNDLED_FALLBACK` (opcionais; ver `.env.example`).
+**Docker:** `docker-compose up --build` — repassa variáveis do `.env`/host conforme `docker-compose.yml` e `.env.example` (MAP_KEY, OpenAQ, GFW, nível do mar, extinção GBIF, etc.).
 
 ---
 
-## API HTTP (backend)
+## API HTTP (referência rápida)
 
-### Incêndios (dados sincronizados no MongoDB — ideal para o globo)
+A lista **completa**, com estado **Completo / Condicional / Planeado**, está na secção **[Catálogo de endpoints e disponibilidade](#catálogo-de-endpoints-e-disponibilidade)** (acima neste README).
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| `GET` | `/api/fires` | Lista pontos da coleção `nasa_fire`. Query: `limit`, `source`, `startDate`, `endDate` (YYYY-MM-DD). |
-| `GET` | `/api/fires/by-country` | FIRMS por país (hoje via **bbox** interna; códigos ISO3 suportados estão em `COUNTRY_BBOX` em `NasaFireTypes.ts`). |
-| `GET` | `/api/fires/sync-status` | Estado do job de sincronização. |
-| `POST` | `/api/fires/sync` | Corpo opcional: `{ "source": "MODIS_NRT" \| "VIIRS_SNPP_NRT" \| "VIIRS_NOAA20_NRT" }`. |
-
-### Outros
-
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| `GET` | `/api/global-temperature` | Dados GISTEMP (conforme rotas do módulo). |
-| `GET` | `/api/ice-melt` | Nível do mar (JSON em direto da API Climate Tools). |
-| `GET` | `/api/ice-melt/latest` | Último snapshot em MongoDB (`nasa_sea_level`). |
-| `POST` | `/api/ice-melt/sync` | Atualiza snapshot a partir da API. |
-| `GET` | `/api/ice-melt/sync-status` | Estado do cron de sincronização. |
-| `GET` | `/api/meteo/*` | Open-Meteo (forecast, archive, air-quality). |
-| `GET` | `/api/earthquakes/*` | USGS sismos (query + feeds). |
-| `GET` | `/api/events/*` | NASA EONET v2.1. |
-| `GET` | `/api/openaq/*` | OpenAQ v3 (requer `OPENAQ_API_KEY`). |
-| `GET` | `/api/deforestation/*` | GFW Data API (`GFW_API_KEY` para `.../query/json`). |
-| `GET` | `/api/ocean-pollution/*` | EPA R9 Marine Debris (ArcGIS → GeoJSON; sem chave). |
-| `GET` | `/health` | Saúde da API, MongoDB e estado dos syncs expostos. |
-
-Rotas `501`: `GET /api/extinction` (ainda placeholder).
+| Prefixo | Função |
+|---------|--------|
+| `/api/globe`, `/api/fire`, `/api/ocean` | Contrato único `PontoGloboV1` para o globo (índice + camadas por fornecedor). |
+| `/api/fires` | Incêndios FIRMS no Mongo (formato legacy da API BioScan). |
+| `/api/meteo` | Open-Meteo. |
+| `/api/earthquakes` | USGS. |
+| `/api/events` | NASA EONET. |
+| `/api/openaq` | OpenAQ (se chave definida). |
+| `/api/deforestation` | GFW Data API. |
+| `/api/ocean-pollution` | ArcGIS EPA (GeoJSON bruto). |
+| `/api/global-temperature` | GISTEMP (Mongo). |
+| `/api/ice-melt` | Nível do mar / degelo. |
+| `/api/extinction` | GBIF + IUCN (Mongo). |
+| `/health` | Estado do processo e dependências. |
 
 ---
 
@@ -144,14 +211,19 @@ Rotas `501`: `GET /api/extinction` (ainda placeholder).
 
 ```
 src/
-├── index.js                          # Express, MongoDB, montagem das rotas NASA
+├── index.js                          # Express, MongoDB, montagem de rotas
+├── infrastructure/apis/Globe/        # Contrato PontoGloboV1: /api/globe, /api/fire, /api/ocean
 ├── infrastructure/apis/NASA/
-│   ├── NasaFire/                     # FIRMS: serviço, modelo, controlador, rotas
+│   ├── NasaFire/                     # FIRMS → /api/fires (+ /api/fire/nasa normalizado)
 │   ├── NasaGistemp/
-│   └── NasaSeaLevel/
-├── infrastructure/apis/GlobalForestWatch/  # GFW Data API → /api/deforestation
-├── infrastructure/apis/OceanPollution/     # EPA R9 ArcGIS → /api/ocean-pollution
-├── infrastructure/apis/              # Outros clientes (Copernicus, …)
+│   ├── NasaSeaLevel/
+│   └── NasaEonet/
+├── infrastructure/apis/OpenMeteo/
+├── infrastructure/apis/UsgsEarthquake/
+├── infrastructure/apis/OpenAq/
+├── infrastructure/apis/GlobalForestWatch/
+├── infrastructure/apis/OceanPollution/
+├── infrastructure/apis/Extinction/
 └── __tests__/                        # Jest + ts-jest; ver src/__tests__/README.md
 ```
 
@@ -162,9 +234,9 @@ Documentação detalhada por módulo: `src/infrastructure/apis/NASA/NasaFire/REA
 ## Próximos passos (integração contínua)
 
 1. **FIRMS:** monitorizar quotas NASA; alargar `COUNTRY_BBOX` ou alternativa GeoJSON quando o endpoint país voltar a estar estável.
-2. **Camadas para o globo:** definir para cada fonte um **contrato mínimo** (`type`, `lat`, `lon`, `recordedAt`, `sourceId`) — possível evolução para endpoint agregado tipo `/api/globe/layers`.
-3. **Prioridade sugerida:** `GET /api/extinction` (IUCN onde a licença permitir), gelo e nível do mar (NSIDC, NASA), mais produtos Copernicus; alargar **ocean-pollution** com mais fontes públicas se necessário.
-4. **Qualidade:** paginação em listas grandes, cache ou tiles para muitos pontos, autenticação se a API passar a ser pública na Internet.
+2. **Novos fornecedores** sob `/api/fire/*` e `/api/ocean/*` (mesmo contrato `PontoGloboV1`).
+3. **Prioridade sugerida:** mais fontes oceânicas e de gelo (NSIDC, Copernicus); alargar GBIF com quotas; normalizar GFW/meteo para pontos de globo quando fizer sentido.
+4. **Qualidade:** paginação, cache ou tiles, OpenAPI, autenticação se a API for pública na Internet.
 
 ---
 

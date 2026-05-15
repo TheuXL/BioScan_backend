@@ -1,5 +1,5 @@
 /**
- * Placeholder for IUCN Red List API client.
+ * @deprecated Utilizar o módulo TypeScript `Extinction` (GBIF + MongoDB) em `GET /api/extinction/*`.
  */
 class IUCNRedListApi {
   constructor() {
@@ -7,7 +7,7 @@ class IUCNRedListApi {
   }
 
   async getData() {
-    // Implement data fetching logic here
+    throw new Error('Use o módulo Extinction (GBIF) em /api/extinction.');
   }
 }
 

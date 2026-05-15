@@ -112,6 +112,16 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `OceanPollution/` — `GET /api/ocean-pollution`, `/epa-r9/:dataset/metadata`, `/epa-r9/:dataset/layers/:layerId/geojson`. |
 | **Globo** | **GeoJSON** com `Point` — marcadores no globo. |
 
+### GBIF — ocorrências com categorias Lista Vermelha IUCN (índice GBIF)
+
+| Campo | Detalhe |
+|-------|---------|
+| **O que traz** | Milhões de **ocorrências** de espécies com coordenadas; muitas com categoria **Lista Vermelha** (ex.: CR, EN, VU) indexada pelo GBIF (não substitui licenciamento comercial da IUCN). |
+| **API / doc** | [GBIF Occurrence API](https://www.gbif.org/developer/occurrence) · [Citação](https://www.gbif.org/citation-guidelines) |
+| **Resumo** | REST + JSON; **sem chave** para volumes moderados; usar com **User-Agent** identificável e respeitar políticas GBIF. |
+| **Uso BioScan** | Módulo `Extinction/` — sincronização paginada → MongoDB `extinction_gbif_occurrence`; `GET /api/extinction`, `/sync-status`, `POST /sync`. |
+| **Globo** | Um ponto por ocorrência (`latitude`/`longitude`); legenda por `iucnRedListCategory`. |
+
 ---
 
 ## Recomendadas a seguir (bom encaixe com o globo)
@@ -241,6 +251,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Gelo / neve** | NSIDC | Camada ou série |
 | **Floresta / desmatamento** | GFW Data API (já: `/api/deforestation`) | SQL / alertas / polígonos (geostore) |
 | **Lixo marinho / observações** | EPA R9 ArcGIS (já: `/api/ocean-pollution`) | Pontos (GeoJSON) |
+| **Espécies em risco (ocorrências)** | GBIF + IUCN no índice (já: `/api/extinction`) | Pontos / clusters |
 | **Satélite “Earth view”** | GIBS | Tiles |
 | **Uso do solo** | WorldCover | Raster colorido |
 | **Meteo local** | Open-Meteo (já: `/api/meteo`) | Tooltip / camada leve |

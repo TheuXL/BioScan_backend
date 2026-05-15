@@ -3,22 +3,16 @@ const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const mongoose = require('mongoose');
-// NASA Fire Module (new structure)
 const { NasaFireService } = require('./infrastructure/apis/NASA/NasaFire/NasaFireService');
 const { createNasaFireRoutes } = require('./infrastructure/apis/NASA/NasaFire/NasaFireRoutes');
-
-// NASA GISTEMP Module (new structure)
 const { NasaGistempService } = require('./infrastructure/apis/NASA/NasaGistemp/NasaGistempService');
 const { createNasaGistempRoutes } = require('./infrastructure/apis/NASA/NasaGistemp/NasaGistempRoutes');
 const { NasaSeaLevelService } = require('./infrastructure/apis/NASA/NasaSeaLevel/NasaSeaLevelService');
 const { createNasaSeaLevelRoutes } = require('./infrastructure/apis/NASA/NasaSeaLevel/NasaSeaLevelRoutes');
-// Open-Meteo (on-demand, sem MongoDB)
 const { OpenMeteoService } = require('./infrastructure/apis/OpenMeteo/OpenMeteoService');
 const { createOpenMeteoRoutes } = require('./infrastructure/apis/OpenMeteo/OpenMeteoRoutes');
-// USGS Earthquakes (on-demand, sem MongoDB)
 const { UsgsEarthquakeService } = require('./infrastructure/apis/UsgsEarthquake/UsgsEarthquakeService');
 const { createUsgsEarthquakeRoutes } = require('./infrastructure/apis/UsgsEarthquake/UsgsEarthquakeRoutes');
-// NASA EONET (on-demand, sem MongoDB)
 const { NasaEonetService } = require('./infrastructure/apis/NASA/NasaEonet/NasaEonetService');
 const { createNasaEonetRoutes } = require('./infrastructure/apis/NASA/NasaEonet/NasaEonetRoutes');
 const { OpenAqService, resolveOpenAqApiKey } = require('./infrastructure/apis/OpenAq/OpenAqService');
@@ -27,6 +21,11 @@ const { GlobalForestWatchService } = require('./infrastructure/apis/GlobalForest
 const { createGlobalForestWatchRoutes } = require('./infrastructure/apis/GlobalForestWatch/GlobalForestWatchRoutes');
 const { OceanPollutionService } = require('./infrastructure/apis/OceanPollution/OceanPollutionService');
 const { createOceanPollutionRoutes } = require('./infrastructure/apis/OceanPollution/OceanPollutionRoutes');
+const { createGlobeRoutes } = require('./infrastructure/apis/Globe/GlobeRoutes');
+const { createGlobeFireRoutes } = require('./infrastructure/apis/Globe/GlobeFireRoutes');
+const { createGlobeOceanRoutes } = require('./infrastructure/apis/Globe/GlobeOceanRoutes');
+const { ExtinctionService } = require('./infrastructure/apis/Extinction/ExtinctionService');
+const { createExtinctionRoutes } = require('./infrastructure/apis/Extinction/ExtinctionRoutes');
 
 const app = express();
 
@@ -69,6 +68,17 @@ const oceanPollutionService = new OceanPollutionService();
 const oceanPollutionRouter = express.Router();
 app.use('/api/ocean-pollution', createOceanPollutionRoutes(oceanPollutionRouter, oceanPollutionService));
 app.locals.oceanPollutionService = oceanPollutionService;
+
+const depsGlobe = { usgs: usgsEarthquakeService, ocean: oceanPollutionService };
+
+const fireGlobeRouter = express.Router();
+app.use('/api/fire', createGlobeFireRoutes(fireGlobeRouter, depsGlobe));
+
+const oceanGlobeRouter = express.Router();
+app.use('/api/ocean', createGlobeOceanRoutes(oceanGlobeRouter, depsGlobe));
+
+const globeRouter = express.Router();
+app.use('/api/globe', createGlobeRoutes(globeRouter, depsGlobe));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bio_scan_db')
@@ -113,13 +123,16 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bio_scan_
     app.locals.nasaSeaLevelService = nasaSeaLevelService;
     const nasaSeaLevelRouter = express.Router();
     app.use('/api/ice-melt', createNasaSeaLevelRoutes(nasaSeaLevelRouter, nasaSeaLevelService));
+
+    const extinctionService = new ExtinctionService();
+    extinctionService.startSync();
+    app.locals.extinctionService = extinctionService;
+    const extinctionRouter = express.Router();
+    app.use('/api/extinction', createExtinctionRoutes(extinctionRouter, extinctionService));
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
-// Placeholder routes for other APIs mentioned in README.md
-app.get('/api/extinction', (req, res) => {
-  res.status(501).json({ message: 'Endangered Species API not yet implemented.' });
-});
+// Extinction / GBIF mounted after MongoDB connects (see mongoose.connect above)
 
 // Health Check
 app.get('/health', (req, res) => {
@@ -163,7 +176,28 @@ app.get('/health', (req, res) => {
       mode: 'on-demand',
       basePath: '/api/ocean-pollution',
       source: 'EPA R9 Marine Debris (ArcGIS REST)'
-    }
+    },
+    globe: {
+      mode: 'on-demand',
+      basePath: '/api/globe',
+      contract: 'PontoGloboV1 (schemaVersion 1.0)',
+      dominios: {
+        fire: '/api/fire',
+        ocean: '/api/ocean'
+      }
+    },
+    extinction: app.locals.extinctionService
+      ? {
+          mode: 'sync + read',
+          basePath: '/api/extinction',
+          source: 'GBIF occurrence (IUCN categories CR/EN/VU…)',
+          sync: app.locals.extinctionService.getSyncStatus()
+        }
+      : {
+          enabled: false,
+          basePath: '/api/extinction',
+          hint: 'Requires MongoDB connection for sync and storage'
+        }
   });
 });
 
