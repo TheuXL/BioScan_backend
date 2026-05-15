@@ -1,6 +1,6 @@
 # Open-Meteo (meteorologia contextual)
 
-Módulo TypeScript alinhado à [arquitetura do backend](../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Sem `Models` — proxy **on-demand** (sem MongoDB nem cron).
+Módulo TypeScript alinhado à [arquitetura do backend](../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Proxy on-demand à Open-Meteo; com **MongoDB** ligado, `OpenMeteoController` usa **`proxy_cache_entries`** (`OpenMeteoProxyCacheConfig.ts`, env `OPENMETEO_PROXY_RECONCILIATION_MODE`, `OPENMETEO_PROXY_TTL_SEC`).
 
 ## Estrutura
 

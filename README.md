@@ -47,9 +47,7 @@ Novo fornecedor de fogo: novo segmento `GET /api/fire/<slug>` + entrada no JSON 
 ## Duas formas de integração (conceito)
 
 1. **Sincronização + MongoDB** — a rotina de sync **descarrega** da fonte, **grava** no BioScan e os **GET** leem principalmente do banco. Inclui hoje, entre outros: **FIRMS**, **GISTEMP**, **nível do mar** (com live + snapshot conforme módulo), **Extinction/GBIF**.
-2. **Proxy on-demand** — cada pedido ao BioScan **encaminha** (ou adapta) o pedido à API externa; **não** há modelo Mongo obrigatório nesses módulos. Exemplos atuais: **Open-Meteo**, **USGS**, **NASA EONET**, **OpenAQ**, **GFW**, **EPA ArcGIS** em `/api/ocean-pollution`. O `GlobeController` pode **normalizar à vôo** (ex.: sismos, lixo marinho via EPA) para `PontoGloboV1`.
-
-**Direcção de produto:** para proxies, pode definir-se por serviço **cache em Mongo** com política de reconciliação (por exemplo: *delta* quando a listagem é parcial; *snapshot completo* quando o âmbito é autoritativo; *TTL por chave* dentro de um âmbito para expirar o que não foi refrescado). Isso evita apagar dados bons em listagens paginadas e permite servir **último estado válido** se o upstream falhar. A escolha concreta fixa-se **por integração** ao implementá-la.
+2. **Proxy on-demand** — BioScan **encaminha** o pedido à API externa. Com **Mongo ligado**, **OpenAQ** (lista e por recurso), **Open-Meteo**, **USGS**, **GFW**, **NASA EONET** e **EPA** `/ocean-pollution` (metadados / GeoJSON) podem gravar em **`proxy_cache_entries`** com modo **`delta` \| `snapshot` \| `hybrid_ttl`** por serviço (`.env`; ver `src/infrastructure/cache/`). Se o upstream falhar, há **fallback** ao último estado em cache quando existir (`bioscan_meta` no JSON). O **`GlobeController`** pode normalizar para `PontoGloboV1` ao lado disto (ex.: sismos Globe).
 
 ---
 
@@ -162,9 +160,20 @@ Opcional: `FIRMS_SYNC_MAX_RECORDS` (sobretudo testes), `EXTINCTION_GBIF_*`, `SEA
 
 ---
 
+## CI (GitHub Actions)
+
+| Workflow | Quando corre | O quê |
+|----------|----------------|------|
+| **`ci.yml`** | Push e PR para `main` / `master` | `npm ci`, `tsc --noEmit`, `npm run test:ci` (jest sobre `proxyCanonical` — sem rede nem segredos). |
+| **`integration.yml`** | Só **manualmente** (aba Actions → *Run workflow*) | `npm test` completo, com **MongoDB** em serviço e variáveis a partir de **segredos** do repositório. |
+
+Para a suíte de integração, define no GitHub **Settings → Secrets and variables → Actions** pelo menos **`MAP_KEY`** e **`OPENAQ_API_KEY`** (os testes de FIRMS e outros módulos falham ou saltam conforme o código). **`GFW_API_KEY`** é usada onde os testes GFW não estão em `describe.skip`.
+
+---
+
 ## Como correr
 
-**Requisitos:** Node.js 18+, MongoDB acessível.
+**Requisitos:** Node.js 20+ (ver `engines` em `package.json`), MongoDB acessível para rotas que persistem.
 
 ```bash
 npm install

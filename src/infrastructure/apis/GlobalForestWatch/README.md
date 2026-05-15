@@ -1,6 +1,6 @@
 # Global Forest Watch — Data API (desmatamento / alertas)
 
-Módulo TypeScript alinhado à [arquitetura do backend](../../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Sem `Models` — proxy à [GFW Data API](https://data-api.globalforestwatch.org/).
+Módulo TypeScript alinhado à [arquitetura do backend](../../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Proxy à [GFW Data API](https://data-api.globalforestwatch.org/). Com **MongoDB** ligado, `ping`, `datasets`, `fields` e **`query/json`** podem usar **`proxy_cache_entries`** (**`GlobalForestWatchProxyCacheConfig.ts`**, env `GFW_PROXY_*`).
 
 ## Fonte
 

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node -r ts-node/register src/index.js",
     "dev": "nodemon -r ts-node/register src/index.js",
+    "test:ci": "jest src/__tests__/cache/proxyCanonical.test.ts --forceExit --detectOpenHandles",
     "test": "jest --forceExit --detectOpenHandles --verbose",
     "test:firms": "jest src/__tests__/tests/Firms.test.js --forceExit --detectOpenHandles --verbose"
   },
@@ -19,6 +20,9 @@
   ],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "axios": "^1.9.0",
     "cors": "^2.8.5",

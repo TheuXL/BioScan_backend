@@ -1,6 +1,6 @@
 # USGS Earthquakes (sismos)
 
-Módulo TypeScript alinhado à [arquitetura do backend](../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Sem `Models` — proxy **on-demand** (sem MongoDB nem cron).
+Módulo TypeScript alinhado à [arquitetura do backend](../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Proxy público aos FDSNWS/feeds USGS; com **MongoDB** ligado usa **`proxy_cache_entries`** como blob por pedido (**`UsgsEarthquakeProxyCacheConfig.ts`**, env `USGS_PROXY_*`).
 
 ## Estrutura
 

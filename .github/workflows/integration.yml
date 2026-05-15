@@ -1,0 +1,35 @@
+# Suíte completa: APIs reais + MongoDB. Configurar segredos no repositório e executar manualmente.
+# Ver secção "CI" no README.
+name: Integration tests
+
+on:
+  workflow_dispatch:
+
+jobs:
+  full-suite:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    env:
+      MONGODB_URI: mongodb://127.0.0.1:27017/bioscan_ci
+      MAP_KEY: ${{ secrets.MAP_KEY }}
+      OPENAQ_API_KEY: ${{ secrets.OPENAQ_API_KEY }}
+      GFW_API_KEY: ${{ secrets.GFW_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Jest (suíte completa)
+        run: npm test

@@ -1,0 +1,33 @@
+# CI por defeito: sem segredos, sem Mongo nem APIs — adequado a PRs e forks.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck & testes unitários (cache)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: TypeScript (sem emit)
+        run: npx tsc --noEmit
+
+      - name: Jest — proxy / scope (sem rede)
+        run: npm run test:ci

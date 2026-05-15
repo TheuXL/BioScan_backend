@@ -1,6 +1,21 @@
 # OpenAQ (qualidade do ar — API v3)
 
-Módulo TypeScript alinhado à [arquitetura do backend](../../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**. Sem `Models` — proxy **on-demand** (sem MongoDB).
+Módulo TypeScript alinhado à [arquitetura do backend](../../../../../Arquitetura.md): **Service** / **Controller** / **Routes** / **Types** / **Middleware**.
+
+## Cache MongoDB (`GET /locations`)
+
+Se o **MongoDB** estiver ligado ao processo, `GET /api/openaq/locations` grava entradas na coleção **`proxy_cache_entries`** (um documento por `id` de local dentro de um **âmbito** derivado da query). Três modos (env):
+
+| Variável | Valores | Comportamento |
+|----------|---------|----------------|
+| `OPENAQ_LOCATIONS_RECONCILIATION_MODE` | `delta` | Só actualiza o que veio na resposta; **não** apaga por omissão (listagem parcial). |
+| | `snapshot` | Trata esta resposta como **conjunto completo** do âmbito (`scopeKey`): remove cache de chaves que **não** vieram (usar só quando souberes que a listagem cobre todo o âmbito). |
+| | `hybrid_ttl` (**predefinido**) | Como delta nos upserts + remove entradas **deste** âmbito com `lastRefreshedAt` &lt; agora − TTL. |
+| `OPENAQ_LOCATIONS_TTL_SEC` | segundos (default `3600`) | Usado apenas com `hybrid_ttl`. |
+
+Modo **`snapshot`:** se a resposta tiver **0** locais, o backend **não** executa limpeza por omissão (evita apagar todo o âmbito por erro de formato ou corpo incompleto). Só faz remoções quando há **pelo menos** um elemento na lista.
+
+Se o **upstream** falhar e existir cache para o mesmo âmbito, a API responde **200** com `meta.fromBioScanCache: true`. Sem Mongo ou sem cache → **502** como antes.
 
 ## Fonte
 
@@ -28,7 +43,7 @@ Use **`OPENAQ_API_KEY`** no `.env` (recomendado em Node). O serviço aceita tamb
 ## Integração no servidor
 
 - Registo em `src/index.js` apenas se `OPENAQ_API_KEY` (ou legado) estiver definida; caso contrário aviso em consola e rotas não montadas.
-- Erros upstream → **502**.
+- Erros upstream em **`/locations`** → **502** se não houver cache Mongo para o mesmo âmbito; caso contrário **200** com dados em cache (`meta.fromBioScanCache`).
 
 ## Testes
 
