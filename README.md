@@ -66,6 +66,23 @@ Para novo fornecedor de fogo, adiciona-se `GET /api/fire/<slug>` e uma entrada n
 | **Sem `OPENAQ_API_KEY`** | Ramo **`/api/openaq`** não é registado. |
 | **GFW** | Rotas base de **`/api/deforestation`** existem; **`query/json`** precisa de **`GFW_API_KEY`** (+ **`GFW_API_ORIGIN`** alinhado ao domínio da key). |
 
+### Checklist — o que falta para passar **Condicional → 100%** (montagem + dados úteis)
+
+**“100%” aqui significa:** a rota está **montada**, responde **200** em condições normais e devolve dados **consistentes com a fonte** (ou estados explícitos de sync, não erro de configuração).
+
+| Área condicional | O que configurar | Como validar rápido |
+|------------------|------------------|----------------------|
+| **Mongo obrigatório** (fires, temperature, ice-melt, extinction) | `MONGODB_URI` correto; instância acessível **antes** do `mongoose.connect` completar (`src/index.js`). | **`/health`** com `mongodb: connected`. Se `disconnected`, essas rotas **nem existem** (404). |
+| **FIRMS (`/api/fires`, sync, `GET /api/fire/nasa`)** | Mongo + **`MAP_KEY`** (NASA FIRMS). Aguardar **primeira sincronização** (cron ou `POST /api/fires/sync`). | `GET /api/fires/sync-status`; `GET /api/fires?limit=5` com `count` ≥ 0 (idealmente > 0 após sync). |
+| **`/api/globe/especies-ameacadas`** | Mongo + serviço de extinção montado (vem no mesmo bloco que liga ao Mongo). Rede para **GBIF**; opcionalmente afinar `EXTINCTION_GBIF_*` no `.env`. | `GET /api/extinction/sync-status`; `GET /api/globe/especies-ameacadas?limit=5` **200** com `pontos` (pode ser vazio até o primeiro sync terminar). |
+| **`/api/extinction` e sync** | Igual: Mongo + sync GBIF. | `GET /api/extinction?limit=5` após sync. |
+| **`/api/global-temperature` e sync** | Mongo montado; rede para fonte GISTEMP (sem variável extra obrigatória no código). | `GET /api/global-temperature/sync-status`; `GET /api/global-temperature` após `POST .../sync` se necessário. |
+| **`/api/ice-melt` e sync** | Mongo montado; ver **`NasaSeaLevel/README.md`** — `SEA_LEVEL_DATA_URL` e/ou **`SEA_LEVEL_ALLOW_BUNDLED_FALLBACK`** em dev. | `GET /api/ice-melt/sync-status`; `GET /api/ice-melt` ou `/latest` conforme o modo. |
+| **`/api/openaq/*`** | **`OPENAQ_API_KEY`** no `.env` + **reiniciar** o servidor (rotas só se registam se a chave existir ao arrancar). | `GET /api/openaq/parameters` **200**. |
+| **`/api/deforestation/.../query/json` e `.../fields`** | **`GFW_API_KEY`** + **`GFW_API_ORIGIN`** igual ao domínio autorizado na key GFW. | Pedido com query SQL válida; resposta JSON da GFW, não 401/403 por origin. |
+
+**Nota:** as rotas que dependem exclusivamente do Mongo (tabela “Dados em Mongo + sync”) **só são registadas** depois de uma ligação **`mongoose` bem-sucedida**. Já `GET /api/fire/nasa` está sempre montada, mas responde **503** se não houver **`nasaFireService`** (sem `MAP_KEY` ou sem Mongo no arranque FIRMS). **`/api/openaq`** só aparece se **`OPENAQ_API_KEY`** existir **no arranque**.
+
 ### Contrato único globo (`PontoGloboV1`) — preferido pelo cliente “globo”
 
 | Método | Rota | Estado | Notas |
