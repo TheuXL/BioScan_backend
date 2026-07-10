@@ -21,6 +21,8 @@ const { GlobalForestWatchService } = require('./infrastructure/apis/GlobalForest
 const { createGlobalForestWatchRoutes } = require('./infrastructure/apis/GlobalForestWatch/GlobalForestWatchRoutes');
 const { OceanPollutionService } = require('./infrastructure/apis/OceanPollution/OceanPollutionService');
 const { createOceanPollutionRoutes } = require('./infrastructure/apis/OceanPollution/OceanPollutionRoutes');
+const { GlimsService } = require('./infrastructure/apis/GLIMS/GlimsService');
+const { createGlimsRoutes } = require('./infrastructure/apis/GLIMS/GlimsRoutes');
 const { createGlobeRoutes } = require('./infrastructure/apis/Globe/GlobeRoutes');
 const { createGlobeFireRoutes } = require('./infrastructure/apis/Globe/GlobeFireRoutes');
 const { createGlobeOceanRoutes } = require('./infrastructure/apis/Globe/GlobeOceanRoutes');
@@ -68,6 +70,11 @@ const oceanPollutionService = new OceanPollutionService();
 const oceanPollutionRouter = express.Router();
 app.use('/api/ocean-pollution', createOceanPollutionRoutes(oceanPollutionRouter, oceanPollutionService));
 app.locals.oceanPollutionService = oceanPollutionService;
+
+const glimsService = new GlimsService();
+const glimsRouter = express.Router();
+app.use('/api/glaciers', createGlimsRoutes(glimsRouter, glimsService));
+app.locals.glimsService = glimsService;
 
 const depsGlobe = { usgs: usgsEarthquakeService, ocean: oceanPollutionService };
 
@@ -176,6 +183,15 @@ app.get('/health', (req, res) => {
       mode: 'on-demand',
       basePath: '/api/ocean-pollution',
       source: 'EPA R9 Marine Debris (ArcGIS REST)'
+    },
+    glaciers: {
+      mode: 'on-demand',
+      basePath: '/api/glaciers',
+      source: 'GLIMS glacier database',
+      endpoints: {
+        capabilities: '/api/glaciers/capabilities',
+        layerGeoJson: '/api/glaciers/layers/:layerName/geojson'
+      }
     },
     globe: {
       mode: 'on-demand',
