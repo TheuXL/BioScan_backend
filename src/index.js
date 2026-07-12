@@ -76,7 +76,7 @@ const glimsRouter = express.Router();
 app.use('/api/glaciers', createGlimsRoutes(glimsRouter, glimsService));
 app.locals.glimsService = glimsService;
 
-const depsGlobe = { usgs: usgsEarthquakeService, ocean: oceanPollutionService };
+const depsGlobe = { usgs: usgsEarthquakeService, ocean: oceanPollutionService, glims: glimsService };
 
 const fireGlobeRouter = express.Router();
 app.use('/api/fire', createGlobeFireRoutes(fireGlobeRouter, depsGlobe));
@@ -199,7 +199,8 @@ app.get('/health', (req, res) => {
       contract: 'PontoGloboV1 (schemaVersion 1.0)',
       dominios: {
         fire: '/api/fire',
-        ocean: '/api/ocean'
+        ocean: '/api/ocean',
+        glaciers: '/api/globe/glacieras'
       }
     },
     extinction: app.locals.extinctionService
