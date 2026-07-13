@@ -200,7 +200,7 @@ app.get('/health', (req, res) => {
       dominios: {
         fire: '/api/fire',
         ocean: '/api/ocean',
-        glaciers: '/api/globe/glacieras'
+        glaciers: '/api/globe/geleiras'
       }
     },
     extinction: app.locals.extinctionService

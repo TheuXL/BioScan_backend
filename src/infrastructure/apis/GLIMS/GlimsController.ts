@@ -45,9 +45,10 @@ export class GlimsController {
     const scopeKey = buildScopeKey(GLIMS_CAPABILITIES_SOURCE, {});
     const mode = resolveGlimsProxyReconciliationMode();
     const ttlMs = resolveGlimsProxyTtlMs();
-
+  
     try {
       const data = await this.service.getCapabilities();
+  
       if (isMongoConnected()) {
         await reconcileProxyScope({
           mode,
@@ -57,19 +58,37 @@ export class GlimsController {
           ttlMs: mode === 'hybrid_ttl' ? ttlMs : undefined
         });
       }
-      res.type('application/xml').send(data);
+  
+      res
+        .status(200)
+        .type('application/xml')
+        .set('X-BioScan-Cache', 'MISS')
+        .send(data);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       console.error('Glims getCapabilities:', message);
-      const cached = isMongoConnected() && (await readScopeFirstPayload(GLIMS_CAPABILITIES_SOURCE, scopeKey));
+  
+      const cached =
+        isMongoConnected() &&
+        (await readScopeFirstPayload(GLIMS_CAPABILITIES_SOURCE, scopeKey));
+  
       if (cached !== null && cached !== undefined) {
-        res.status(200).json(withBioscanCacheMeta(cached, GLIMS_PROXY_FALLBACK_NOTE));
+        res
+          .status(200)
+          .type('application/xml')
+          .set('X-BioScan-Cache', 'HIT')
+          .set('X-BioScan-Fallback', GLIMS_PROXY_FALLBACK_NOTE)
+          .send(cached);
+  
         return;
       }
-      res.status(502).json({ message: 'Could not retrieve GLIMS capabilities.', error: message });
+  
+      res.status(502).json({
+        message: 'Could not retrieve GLIMS capabilities.',
+        error: message
+      });
     }
   }
-
   async getLayerGeojson(req: Request, res: Response): Promise<void> {
     const layerName = String(req.params.layerName || 'outlines');
     const bbox = String(req.query.bbox || GLIMS_API_CONFIG.DEFAULT_BBOX).trim();
