@@ -13,7 +13,7 @@ import { validateGlobeLimit, validateGlobeOceanQuery } from './GlobeMiddleware';
  */
 export function createGlobeOceanRoutes(
   router: Router,
-  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService; glims:GlimsService }
+  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService; glims: GlimsService }
 ): Router {
   const controller = new GlobeController(deps);
 
@@ -29,10 +29,15 @@ export function createGlobeOceanRoutes(
           nomeExibicao: 'EPA Region 9 — Marine Debris (ArcGIS)',
           caminho: '/api/ocean/epa',
           origemDadosUpstream: '/api/ocean-pollution',
-          parametrosQuery: ['limit', 'dataset', 'layerId', 'where', 'resultRecordCount']
+          parametrosQuery: ['limit', 'offset', 'dataset', 'layerId', 'where', 'resultRecordCount']
         }
       ],
-      limiteGlobo: { padrao: LIMITS.DEFAULT, min: LIMITS.MIN, max: LIMITS.MAX },
+      limiteGlobo: {
+        padrao: LIMITS.DEFAULT,
+        min: LIMITS.MIN,
+        max: LIMITS.MAX,
+        offset: true
+      },
       indiceAgregado: '/api/globe'
     });
   });

@@ -39,13 +39,31 @@ export interface RespostaCamadaGloboV1 {
   camada: string;
   /** Pontos nesta resposta (= `pontos.length`). */
   count: number;
-  /** Opcional: total que satisfaz os filtros (ex.: Mongo antes do `limit`). */
+  /** Total que satisfaz os filtros (ex.: Mongo antes de limit/offset). */
   totalMatching?: number;
+  /** Índice inicial desta página (query `offset`). */
+  offset?: number;
+  /** Tamanho de página pedido (query `limit`). */
+  limit?: number;
+  /** true se ainda existem registos após esta página. */
+  hasMore?: boolean;
   pontos: PontoGloboV1[];
 }
 
+/**
+ * Limites por pedido HTTP.
+ * - `MAX` elevado para permitir carregar conjuntos grandes (ex. todos os focos FIRMS) num ou poucos pedidos.
+ * - Preferir `offset` + várias páginas no frontend quando o volume for enorme.
+ * - Tecto de segurança contra OOM / timeout; não é o total disponível no Mongo.
+ */
 export const LIMITS = {
-  DEFAULT: 150,
+  DEFAULT: 500,
   MIN: 1,
-  MAX: 500
+  MAX: 50_000
+} as const;
+
+export const OFFSET = {
+  DEFAULT: 0,
+  MIN: 0,
+  MAX: 5_000_000
 } as const;

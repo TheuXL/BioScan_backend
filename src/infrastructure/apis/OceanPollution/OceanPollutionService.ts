@@ -40,13 +40,19 @@ export class OceanPollutionService {
   async queryLayerGeoJson(
     dataset: string,
     layerId: number,
-    options?: { where?: string; resultRecordCount?: number; outFields?: string }
+    options?: {
+      where?: string;
+      resultRecordCount?: number;
+      resultOffset?: number;
+      outFields?: string;
+    }
   ): Promise<unknown> {
     const path = `${this.mapServerBasePath(dataset)}/${layerId}/query`;
     const where = options?.where?.trim() || '1=1';
     const resultRecordCount =
       options?.resultRecordCount ?? HTTP_CONFIG.DEFAULT_RESULT_RECORD_COUNT;
     const outFields = options?.outFields?.trim() || '*';
+    const resultOffset = options?.resultOffset ?? 0;
 
     const response = await this.client.get<unknown>(path, {
       params: {
@@ -54,7 +60,8 @@ export class OceanPollutionService {
         returnGeometry: 'true',
         outFields,
         f: 'geojson',
-        resultRecordCount
+        resultRecordCount,
+        ...(resultOffset > 0 ? { resultOffset } : {})
       }
     });
     if (response.status !== 200 || response.data === undefined) {

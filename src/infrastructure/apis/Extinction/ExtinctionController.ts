@@ -11,6 +11,7 @@ export class ExtinctionController {
   async getOccurrences(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? '100'), 10);
+      const offset = Number.parseInt(String(req.query.offset ?? '0'), 10) || 0;
       const category =
         req.query.category !== undefined && req.query.category !== null && String(req.query.category) !== ''
           ? String(req.query.category).trim().toUpperCase()
@@ -42,6 +43,7 @@ export class ExtinctionController {
       });
       const data = await this.service.listOccurrences({
         limit,
+        offset,
         category,
         minLatitude,
         maxLatitude,
@@ -52,6 +54,9 @@ export class ExtinctionController {
       res.status(200).json({
         count: data.length,
         totalMatching,
+        offset,
+        limit,
+        hasMore: offset + data.length < totalMatching,
         data,
         source: {
           id: this.service.getSourceId(),

@@ -65,9 +65,20 @@ export const validateLimit = (req: Request, res: Response, next: NextFunction): 
   
   if (limit !== undefined) {
     const limitNum = parseInt(limit as string);
-    if (isNaN(limitNum) || limitNum < 1 || limitNum > 10000) {
+    if (isNaN(limitNum) || limitNum < 1 || limitNum > 50000) {
       res.status(400).json({
-        message: 'Limit parameter must be a number between 1 and 10000.'
+        message: 'Limit parameter must be a number between 1 and 50000.'
+      });
+      return;
+    }
+  }
+
+  const { offset } = req.query;
+  if (offset !== undefined && offset !== '') {
+    const offsetNum = parseInt(offset as string, 10);
+    if (isNaN(offsetNum) || offsetNum < 0) {
+      res.status(400).json({
+        message: 'offset must be a non-negative integer.'
       });
       return;
     }

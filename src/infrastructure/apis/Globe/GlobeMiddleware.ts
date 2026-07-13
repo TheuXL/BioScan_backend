@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { LIMITS } from './GlobeTypes';
+import { LIMITS, OFFSET } from './GlobeTypes';
 import {
   EPA_R9_MARINE_DEBRIS_DATASETS,
   HTTP_CONFIG as OCEAN_HTTP
@@ -62,6 +62,18 @@ export function validateGlobeLimit(req: Request, res: Response, next: NextFuncti
     });
     return;
   }
+
+  const offsetRaw = req.query.offset;
+  if (offsetRaw !== undefined && offsetRaw !== null && String(offsetRaw) !== '') {
+    const o = Number.parseInt(String(offsetRaw), 10);
+    if (!Number.isInteger(o) || o < OFFSET.MIN || o > OFFSET.MAX) {
+      res.status(400).json({
+        message: `offset deve estar entre ${OFFSET.MIN} e ${OFFSET.MAX}.`
+      });
+      return;
+    }
+  }
+
   next();
 }
 

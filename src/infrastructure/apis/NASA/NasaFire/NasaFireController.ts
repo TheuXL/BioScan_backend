@@ -16,7 +16,9 @@ export class NasaFireController {
    */
   async getFires(req: Request, res: Response): Promise<void> {
     try {
-      const { limit = DEFAULTS.LIMIT, source, startDate, endDate } = req.query;
+      const { limit = DEFAULTS.LIMIT, source, startDate, endDate, offset = '0' } = req.query;
+      const limitN = parseInt(limit as string, 10);
+      const offsetN = parseInt(String(offset), 10) || 0;
       
       const query: any = {};
       if (source) query.source = source;
@@ -26,13 +28,19 @@ export class NasaFireController {
         if (endDate) query.acq_date.$lte = endDate;
       }
 
+      const totalMatching = await NasaFireModel.countDocuments(query);
       const fires = await NasaFireModel.find(query)
         .sort({ acq_date: -1, acq_time: -1 })
-        .limit(parseInt(limit as string))
+        .skip(offsetN)
+        .limit(limitN)
         .lean();
 
       res.json({
         count: fires.length,
+        totalMatching,
+        offset: offsetN,
+        limit: limitN,
+        hasMore: offsetN + fires.length < totalMatching,
         data: fires
       });
     } catch (error: any) {
