@@ -6,14 +6,17 @@ const { OceanPollutionService } = require('../../infrastructure/apis/OceanPollut
 const { createGlobeRoutes } = require('../../infrastructure/apis/Globe/GlobeRoutes');
 const { createGlobeFireRoutes } = require('../../infrastructure/apis/Globe/GlobeFireRoutes');
 const { createGlobeOceanRoutes } = require('../../infrastructure/apis/Globe/GlobeOceanRoutes');
+const { GlimsService } = require('../../infrastructure/apis/GLIMS/GlimsService');
 
 const deps = () => ({
   usgs: new UsgsEarthquakeService(),
-  ocean: new OceanPollutionService()
+  ocean: new OceanPollutionService(),
+  glims: new GlimsService()
 });
 
 /**
- * Contrato Globe sobre router isolado — descoberta local; sismos com USGS real (sem mocks).
+ * Contrato Globe sobre router isolado — descoberta local;
+ * integrações reais com USGS e GLIMS (sem mocks).
  */
 describe('Globe — contrato único por camada', () => {
   let app;
@@ -100,4 +103,34 @@ describe('Globe — contrato único por camada', () => {
   test('GET /api/globe/sismos limit fora da faixa do globo => 400', async () => {
     await request(app).get('/api/globe/sismos').query({ limit: '99999' }).expect(400);
   });
+
+  test('GET /api/globe/geleiras normaliza dados GLIMS', async () => {
+    const res = await request(app)
+      .get('/api/globe/geleiras')
+      .query({
+        limit: '2',
+        feature_count: '2'
+      })
+      .expect(200);
+  
+    expect(res.body).toMatchObject({
+      schemaVersion: '1.0',
+      camada: 'geleira',
+      count: expect.any(Number),
+      pontos: expect.any(Array)
+    });
+  
+    expect(res.body.count).toBeLessThanOrEqual(2);
+  
+    if (res.body.pontos.length > 0) {
+      const p = res.body.pontos[0];
+  
+      expect(p).toHaveProperty('lat');
+      expect(p).toHaveProperty('lon');
+      expect(p).toHaveProperty('tipo', 'geleira');
+      expect(p).toHaveProperty('origem');
+      expect(p).toHaveProperty('idFonte');
+      expect(p).toHaveProperty('severidade');
+    }
+  }, 45000);
 });

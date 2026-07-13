@@ -14,23 +14,24 @@ export class GlimsService {
     });
   }
 
-  async getCapabilities(): Promise<unknown> {
-    const response = await this.client.get<unknown>(GLIMS_API_CONFIG.WMS_CAPABILITIES_URL, {
+  async getCapabilities(): Promise<string> {
+    const response = await this.client.get<string>(GLIMS_API_CONFIG.WMS_CAPABILITIES_URL, {
       params: {
         service: 'WMS',
         version: '1.3.0',
         request: 'GetCapabilities'
-      }
+      },
+      responseType: 'text'
     });
 
-    if (response.status !== 200 || response.data === undefined) {
+    if (response.status !== 200 || typeof response.data !== 'string' || response.data.trim() === '') {
       throw new Error(`GLIMS capabilities failed. HTTP ${response.status}`);
     }
 
     return response.data;
   }
 
-  async getLayerGeoJson(layerName?: string, options?: { bbox?: string; width?: number; height?: number; srs?: string; cql_filter?: string; feature_count?: number }): Promise<unknown> {
+  async getLayerGeoJson(layerName?: string, options?: { bbox?: string; srs?: string; cql_filter?: string; feature_count?: number }): Promise<unknown> {
     const resolvedLayer = this.resolveLayer(layerName);
     const response = await this.client.get<unknown>(GLIMS_API_CONFIG.WMS_BASE_URL, {
       params: {
@@ -41,10 +42,8 @@ export class GlimsService {
         outputFormat: 'application/json',
         srsName: options?.srs ?? GLIMS_API_CONFIG.DEFAULT_SRS,
         bbox: options?.bbox ?? GLIMS_API_CONFIG.DEFAULT_BBOX,
-        width: options?.width ?? GLIMS_API_CONFIG.DEFAULT_WIDTH,
-        height: options?.height ?? GLIMS_API_CONFIG.DEFAULT_HEIGHT,
         cql_filter: options?.cql_filter,
-        maxFeatures: options?.feature_count
+        maxFeatures: options?.feature_count ?? GLIMS_API_CONFIG.DEFAULT_FEATURE_COUNT
       }
     });
 

@@ -17,7 +17,81 @@ function momentoIncendioFirms(acq_date: string, acq_time?: string): string | nul
   }
   return `${acq_date}T12:00:00.000Z`;
 }
+function calcularCentroide(
+  geometry?: {
+    type?: string;
+    coordinates?: unknown;
+  }
+): { lat: number; lon: number } | null {
 
+  if (!geometry) return null;
+
+  // Point
+  if (geometry.type === 'Point') {
+    const coords = geometry.coordinates as number[];
+
+    if (!Array.isArray(coords) || coords.length < 2) {
+      return null;
+    }
+
+    return {
+      lat: coords[1],
+      lon: coords[0]
+    };
+  }
+
+  // Polygon
+  if (geometry.type === 'Polygon') {
+
+    const rings = geometry.coordinates as number[][][];
+
+    if (!Array.isArray(rings) || rings.length === 0) {
+      return null;
+    }
+
+    const points = rings[0];
+
+    let lat = 0;
+    let lon = 0;
+
+    for (const p of points) {
+      lon += p[0];
+      lat += p[1];
+    }
+
+    return {
+      lat: lat / points.length,
+      lon: lon / points.length
+    };
+  }
+
+  // MultiPolygon
+  if (geometry.type === 'MultiPolygon') {
+
+    const polygons = geometry.coordinates as number[][][][];
+
+    if (!Array.isArray(polygons) || polygons.length === 0) {
+      return null;
+    }
+
+    const points = polygons[0][0];
+
+    let lat = 0;
+    let lon = 0;
+
+    for (const p of points) {
+      lon += p[0];
+      lat += p[1];
+    }
+
+    return {
+      lat: lat / points.length,
+      lon: lon / points.length
+    };
+  }
+
+  return null;
+}
 /** NASA FIRMS armazenado em MongoDB (`nasa_fire`). */
 export function normalizarIncendio(doc: {
   _id?: unknown;
@@ -134,6 +208,60 @@ interface GeoJsonFeatureLike {
   properties?: Record<string, unknown>;
   id?: unknown;
 }
+/** GeoJSON Feature do GLIMS. */
+export function normalizarGeleiraFeature(
+  f: GeoJsonFeatureLike,
+  index: number
+): PontoGloboV1 | null {
+
+  const centro = calcularCentroide(f.geometry);
+
+  if (!centro) {
+    return null;
+  }
+
+  const props = f.properties ?? {};
+
+  const id =
+    props.glac_id ??
+    props.glacier_id ??
+    f.id ??
+    index;
+
+  const titulo =
+    typeof props.glac_name === 'string' && props.glac_name.trim() !== ''
+      ? props.glac_name
+      : typeof props.glacier_name === 'string'
+      ? props.glacier_name
+      : `Geleira ${id}`;
+
+  return {
+    lat: centro.lat,
+    lon: centro.lon,
+
+    tipo: 'geleira',
+
+    momento: isoOrNull(
+      typeof props.src_date === 'string'
+        ? props.src_date
+        : null
+    ),
+
+    origem: 'GLIMS',
+
+    idFonte: `glims:${id}`,
+
+    severidade: null,
+
+    titulo,
+
+    detalhes: {
+      area: props.db_area,
+      status: props.rec_status,
+      ...props
+    }
+  };
+}
 
 /** GeoJSON pontual EPA / ArcGIS para lixo marinho. */
 export function normalizarLixoMarinhoFeature(
@@ -209,5 +337,30 @@ export function geoJsonParaLixoMarinho(data: unknown, dataset: string): PontoGlo
     const p = normalizarLixoMarinhoFeature(f, dataset, i);
     if (p) out.push(p);
   });
+  return out;
+}
+
+export function geoJsonParaGeleiras(data: unknown): PontoGloboV1[] {
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    !('features' in data) ||
+    !Array.isArray((data as { features: unknown }).features)
+  ) {
+    return [];
+  }
+
+  const features = (data as { features: GeoJsonFeatureLike[] }).features;
+
+  const out: PontoGloboV1[] = [];
+
+  features.forEach((feature, index) => {
+    const ponto = normalizarGeleiraFeature(feature, index);
+
+    if (ponto) {
+      out.push(ponto);
+    }
+  });
+
   return out;
 }

@@ -10,7 +10,8 @@ export const GLOBE_LAYER_IDS = [
   'incendio',
   'ameacada_gbif',
   'sismo',
-  'lixo_marinho'
+  'lixo_marinho',
+  'geleira'
 ] as const;
 
 export type GlobeLayerId = (typeof GLOBE_LAYER_IDS)[number];

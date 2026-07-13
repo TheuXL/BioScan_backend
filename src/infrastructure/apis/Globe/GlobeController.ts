@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { NasaFireModel } from '../NASA/NasaFire/NasaFireModels';
 import { UsgsEarthquakeService } from '../UsgsEarthquake/UsgsEarthquakeService';
 import { DEFAULT_QUERY_PARAMS } from '../UsgsEarthquake/UsgsEarthquakeTypes';
+import { GlimsService } from '../GLIMS/GlimsService';
 import { OceanPollutionService } from '../OceanPollution/OceanPollutionService';
 import { EPA_R9_MARINE_DEBRIS_DATASETS, HTTP_CONFIG as OceanHttpCfg } from '../OceanPollution/OceanPollutionTypes';
 import type { ExtinctionService } from '../Extinction/ExtinctionService';
@@ -9,6 +10,7 @@ import { GLOBE_LAYER_IDS, GLOBE_SCHEMA_VERSION, LIMITS, type RespostaCamadaGlobo
 import {
   geoJsonParaLixoMarinho,
   geoJsonParaSismos,
+  geoJsonParaGeleiras,
   normalizarAmeacadaGbif,
   normalizarIncendio
 } from './GlobeNormalization';
@@ -31,6 +33,7 @@ export class GlobeController {
     private readonly deps: {
       usgs: UsgsEarthquakeService;
       ocean: OceanPollutionService;
+      glims: GlimsService;
     }
   ) {}
 
@@ -70,6 +73,14 @@ export class GlobeController {
           indiceFornecedores: '/api/ocean',
           origemUpstream: '/api/ocean-pollution',
           parametrosQuery: ['limit', 'dataset', 'layerId', 'where', 'resultRecordCount']
+        },
+        {
+          id: 'geleira',
+          metodoHttp: 'GET',
+          caminho: '/api/globe/geleiras',
+          indiceFornecedores: '/api/glaciers',
+          origemUpstream: '/api/glaciers',
+          parametrosQuery: ['layer','bbox','feature_count']
         }
       ],
       tipoValoresGlobe: [...GLOBE_LAYER_IDS],
@@ -196,6 +207,43 @@ export class GlobeController {
       const message = error instanceof Error ? error.message : String(error);
       console.error('Globe sismos:', message);
       res.status(500).json({ message: 'Erro ao montar camada sismos.', error: message });
+    }
+  }
+  async getGeleiras(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Number.parseInt(
+        String(req.query.limit ?? LIMITS.DEFAULT),
+        10
+      );
+
+      const layer = String(req.query.layer ?? 'outlines');
+      const bbox = String(req.query.bbox ?? '-180,-90,180,90');
+
+      const raw = await this.deps.glims.getLayerGeoJson(layer, {
+        bbox,
+        srs: 'EPSG:4326',
+        feature_count: limit
+      });
+
+      let pontos = geoJsonParaGeleiras(raw);
+
+      if (pontos.length > limit) {
+        pontos = pontos.slice(0, limit);
+      }
+
+      res.status(200).json(
+        envelope('geleira', pontos)
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : String(error);
+
+      console.error('Globe geleiras:', message);
+
+      res.status(500).json({
+        message: 'Erro ao montar camada de geleiras.',
+        error: message
+      });
     }
   }
 

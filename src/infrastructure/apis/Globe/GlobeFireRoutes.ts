@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { GlobeController } from './GlobeController';
+import { GlimsService } from '../GLIMS/GlimsService';
 import { UsgsEarthquakeService } from '../UsgsEarthquake/UsgsEarthquakeService';
 import { OceanPollutionService } from '../OceanPollution/OceanPollutionService';
 import { GLOBE_SCHEMA_VERSION, LIMITS } from './GlobeTypes';
@@ -16,7 +17,7 @@ import {
  */
 export function createGlobeFireRoutes(
   router: Router,
-  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService }
+  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService; glims: GlimsService}
 ): Router {
   const controller = new GlobeController(deps);
 
