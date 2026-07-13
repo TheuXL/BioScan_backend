@@ -123,7 +123,47 @@ describe('Globe — contrato único por camada', () => {
   }, 45000);
 
   test('GET /api/globe/geleiras normaliza dados GLIMS', async () => {
-    const res = await request(app)
+    const glims = new GlimsService();
+    jest.spyOn(glims, 'getLayerGeoJson').mockResolvedValue({
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          id: 'g1',
+          geometry: { type: 'Point', coordinates: [-70.5, -33.4] },
+          properties: { glac_name: 'Test Glacier', glac_id: 'TG-1' }
+        },
+        {
+          type: 'Feature',
+          id: 'g2',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-71, -34],
+                [-70, -34],
+                [-70, -33],
+                [-71, -33],
+                [-71, -34]
+              ]
+            ]
+          },
+          properties: { glacier_name: 'Poly Glacier' }
+        }
+      ]
+    });
+
+    const localDeps = {
+      usgs: new UsgsEarthquakeService(),
+      ocean: new OceanPollutionService(),
+      glims
+    };
+    const localApp = express();
+    const globeRouter = express.Router();
+    createGlobeRoutes(globeRouter, localDeps);
+    localApp.use('/api/globe', globeRouter);
+
+    const res = await request(localApp)
       .get('/api/globe/geleiras')
       .query({
         limit: '2',
@@ -134,7 +174,7 @@ describe('Globe — contrato único por camada', () => {
     expect(res.body).toMatchObject({
       schemaVersion: '1.0',
       camada: 'geleira',
-      count: expect.any(Number),
+      count: 2,
       pontos: expect.any(Array)
     });
 
@@ -143,14 +183,12 @@ describe('Globe — contrato único por camada', () => {
     expect(res.body).toHaveProperty('limit');
     expect(typeof res.body.hasMore).toBe('boolean');
 
-    if (res.body.pontos.length > 0) {
-      const p = res.body.pontos[0];
-      expect(p).toHaveProperty('lat');
-      expect(p).toHaveProperty('lon');
-      expect(p).toHaveProperty('tipo', 'geleira');
-      expect(p).toHaveProperty('origem');
-      expect(p).toHaveProperty('idFonte');
-      expect(p).toHaveProperty('severidade');
-    }
-  }, 45000);
+    const p = res.body.pontos[0];
+    expect(p).toHaveProperty('lat');
+    expect(p).toHaveProperty('lon');
+    expect(p).toHaveProperty('tipo', 'geleira');
+    expect(p).toHaveProperty('origem');
+    expect(p).toHaveProperty('idFonte');
+    expect(p).toHaveProperty('severidade');
+  });
 });
