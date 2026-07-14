@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BioScan - Global Temperature &amp; Anomalies</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#c5c6cb",
+                        "on-tertiary-container": "#008496",
+                        "secondary-fixed": "#74f5ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#273647",
+                        "tertiary-fixed-dim": "#43d8f2",
+                        "on-surface-variant": "#c6c6ca",
+                        "tertiary": "#43d8f2",
+                        "surface-container": "#122131",
+                        "on-background": "#d4e4fa",
+                        "surface-variant": "#273647",
+                        "on-tertiary-fixed": "#001f25",
+                        "surface-dim": "#051424",
+                        "outline": "#8f9195",
+                        "inverse-primary": "#5c5e63",
+                        "background": "#051424",
+                        "on-primary": "#2e3134",
+                        "on-primary-fixed": "#191c1f",
+                        "on-secondary": "#00363a",
+                        "secondary-container": "#00f1fe",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "inverse-on-surface": "#233143",
+                        "on-secondary-container": "#006a70",
+                        "inverse-surface": "#d4e4fa",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#a2eeff",
+                        "secondary": "#ddfcff",
+                        "on-surface": "#d4e4fa",
+                        "surface-container-lowest": "#010f1f",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#1c2b3c",
+                        "tertiary-container": "#00080b",
+                        "on-secondary-fixed": "#002022",
+                        "outline-variant": "#45474a",
+                        "on-primary-container": "#76787d",
+                        "primary-fixed": "#e1e2e7",
+                        "surface-bright": "#2c3a4c",
+                        "on-secondary-fixed-variant": "#004f54",
+                        "primary-container": "#05070a",
+                        "surface": "#051424",
+                        "on-tertiary": "#00363e",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#00dbe7",
+                        "primary": "#c5c6cb",
+                        "primary-fixed-dim": "#c5c6cb",
+                        "surface-container-low": "#0d1c2d",
+                        "on-primary-fixed-variant": "#44474b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "top-bar-height": "64px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "sidebar-width": "320px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom styles for specific elements not easily handled by pure Tailwind */
+        body {
+            background-color: #05070A; /* Level 0 Base */
+            color: #d4e4fa; /* on-surface */
+            overflow: hidden; /* Prevent scrolling for the main HUD view */
+        }
+        
+        .glass-panel {
+            background-color: rgba(5, 20, 36, 0.8); /* surface dim with opacity */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .active-card {
+            border: 1px solid rgba(0, 242, 255, 0.2); /* Cyan 20% */
+        }
+
+        .hud-icon {
+            stroke-width: 2px;
+            fill: none;
+        }
+
+        /* Simplified Globe Visualization Background */
+        .globe-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vmin;
+            height: 80vmin;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #1a2f4c 0%, #05070A 70%);
+            box-shadow: inset -20px -20px 50px rgba(0,0,0,0.8), 0 0 100px rgba(0, 242, 255, 0.1);
+            z-index: 0;
+        }
+        
+        /* Simulated Heatmap layers */
+        .heatmap-hot {
+            position: absolute;
+            top: 20%;
+            right: 30%;
+            width: 30%;
+            height: 20%;
+            background: radial-gradient(ellipse at center, rgba(255, 180, 171, 0.4) 0%, transparent 70%);
+            filter: blur(10px);
+            z-index: 1;
+        }
+        
+        .heatmap-cold {
+            position: absolute;
+            bottom: 30%;
+            left: 20%;
+            width: 40%;
+            height: 15%;
+            background: radial-gradient(ellipse at center, rgba(116, 245, 255, 0.3) 0%, transparent 70%);
+            filter: blur(10px);
+            z-index: 1;
+        }
+
+        .tooltip-point {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #ffb4ab;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ffb4ab, 0 0 20px #ffb4ab;
+            cursor: pointer;
+            z-index: 20;
+        }
+        
+        .tooltip-point::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            width: 16px;
+            height: 16px;
+            border: 1px solid rgba(255, 180, 171, 0.5);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        .hud-line-chart {
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(to right, transparent, rgba(0, 241, 254, 0.05) 50%, transparent);
+            border-bottom: 1px solid rgba(0, 241, 254, 0.3);
+            position: relative;
+        }
+        
+        .hud-line-chart::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* Rough simulation of a rising trend line */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M0,80 Q20,75 40,60 T80,30 T100,10' fill='none' stroke='%23ffb4ab' stroke-width='2'/%3E%3C/svg%3E");
+            background-size: 100% 100%;
+            opacity: 0.8;
+        }
+
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen w-screen font-body-md relative">
+<!-- Background Visualization Canvas -->
+<div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+<div class="globe-bg">
+<div class="heatmap-hot"></div>
+<div class="heatmap-cold"></div>
+<!-- Interactive Tooltip Points on Globe -->
+<div class="tooltip-point" onclick="toggleTooltip('tooltip-siberia')" style="top: 25%; right: 35%;"></div>
+<div class="absolute top-[20%] right-[10%] glass-panel p-3 rounded-lg border border-[#ffb4ab]/30 w-48 opacity-0 transition-opacity duration-300 pointer-events-auto" id="tooltip-siberia">
+<div class="text-error font-label-sm mb-1 uppercase tracking-wider">Critical Event</div>
+<div class="font-headline-md text-on-surface mb-1 text-sm font-bold">Siberian Heatwave 2023</div>
+<div class="font-label-sm text-on-surface-variant">+5.4°C Anomaly</div>
+</div>
+<div class="tooltip-point" onclick="toggleTooltip('tooltip-ocean')" style="bottom: 35%; left: 30%; background-color: #74f5ff; box-shadow: 0 0 10px #74f5ff, 0 0 20px #74f5ff;"></div>
+<style>
+                 .tooltip-point[style*="bottom: 35%"]::after { border-color: rgba(116, 245, 255, 0.5); }
+             </style>
+<div class="absolute bottom-[20%] left-[10%] glass-panel p-3 rounded-lg border border-secondary-fixed/30 w-48 opacity-0 transition-opacity duration-300 pointer-events-auto" id="tooltip-ocean">
+<div class="text-secondary-fixed font-label-sm mb-1 uppercase tracking-wider">Cooling Event</div>
+<div class="font-headline-md text-on-surface mb-1 text-sm font-bold">La Niña Resurgence</div>
+<div class="font-label-sm text-on-surface-variant">-1.2°C Anomaly</div>
+</div>
+</div>
+</div>
+<!-- TopNavBar JSON Component -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-top-bar-height bg-surface/80 dark:bg-surface/80 backdrop-blur-xl text-secondary dark:text-secondary border-b border-white/10 font-body-md text-body-md">
+<div class="font-display-lg text-display-lg font-bold text-on-surface dark:text-on-surface text-xl">
+            BioScan
+        </div>
+<div class="hidden md:flex space-x-8">
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Fire</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Ocean</a>
+<a class="text-secondary-container font-bold border-b-2 border-secondary-container pb-1 hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Climate</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Forests</a>
+</div>
+<div class="flex items-center space-x-4">
+<button class="hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sync</span>
+</button>
+<button class="hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<img alt="Researcher Profile" class="w-8 h-8 rounded-full border border-white/20" data-alt="A close up portrait photo of a professional female researcher looking confidently at the camera. The lighting is studio quality, soft and even, highlighting her professional demeanor. The background is a blurred dark, high-tech environment matching the immersive dark mode style of the UI, featuring faint cyan and deep blue bokeh lights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABZOcFdVt4Fdw_m8Vt0uMEWQwLwlFw-GuBkkLicz5IlKyBlwmvIUabssHXKY5OdI0ztmA4P8R1qg14uajpVbUUDGszakMIX6EzOrq3J8S4j5s5ijuf1PPleASec3ET51mXaLaVQcLTSBh59kcf5R-P9rSpT985C4Fg63EtCCBOOZAHFRc7e6WLQxwlAY6CFKQpbTBZq78DWibVkRnP5LISaRpqrXeSrhTijTD--wWyIWweO9mFexsnWxTHrCQXp-p3XFgKxzjELM0"/>
+</div>
+</nav>
+<!-- SideNavBar JSON Component -->
+<aside class="hidden md:flex fixed left-0 top-top-bar-height bottom-0 w-sidebar-width z-40 flex flex-col p-base bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl text-secondary dark:text-secondary font-label-md text-label-md border-r border-secondary/20 shadow-xl rounded-r-xl">
+<div class="mb-8 p-4">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-1">Global Temperature</h2>
+<p class="text-on-surface-variant font-label-sm text-label-sm">Anomaly Tracking</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="bg-secondary-container/20 text-secondary-container rounded-lg px-4 py-2 border-l-4 border-secondary-container flex items-center hover:bg-surface-bright/50 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">layers</span>
+                Data Layers
+            </a>
+<a class="text-on-surface-variant px-4 py-2 flex items-center hover:bg-surface-bright/50 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">analytics</span>
+                Analysis
+            </a>
+<a class="text-on-surface-variant px-4 py-2 flex items-center hover:bg-surface-bright/50 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">sensors</span>
+                Monitoring
+            </a>
+</nav>
+<div class="mt-auto mb-6 px-4">
+<div class="glass-panel p-4 rounded-xl active-card mb-6">
+<h3 class="font-label-md text-outline mb-2">Decadal Trend (°C)</h3>
+<div class="hud-line-chart"></div>
+<div class="flex justify-between mt-2 font-label-sm text-on-surface-variant">
+<span>1880</span>
+<span class="text-error font-bold">+1.2°C</span>
+<span>2024</span>
+</div>
+</div>
+<button class="w-full py-2 bg-secondary-container text-on-secondary-container font-label-md font-bold rounded hover:bg-secondary-fixed transition-colors">
+                Export Data
+            </button>
+</div>
+<div class="border-t border-white/10 pt-4 flex justify-around">
+<a class="text-on-surface-variant hover:text-secondary flex flex-col items-center text-xs" href="#">
+<span class="material-symbols-outlined mb-1 text-lg" style="font-variation-settings: 'FILL' 0;">help</span>
+                Help
+            </a>
+<a class="text-on-surface-variant hover:text-secondary flex flex-col items-center text-xs" href="#">
+<span class="material-symbols-outlined mb-1 text-lg" style="font-variation-settings: 'FILL' 0;">source</span>
+                Sources
+            </a>
+</div>
+</aside>
+<!-- Right Side Detail Panel (Custom for this view) -->
+<aside class="hidden xl:flex fixed right-margin-desktop top-top-bar-height bottom-margin-desktop w-[360px] z-40 flex-col py-margin-desktop space-y-gutter pointer-events-none">
+<!-- Main Stats Bento -->
+<div class="glass-panel p-6 rounded-2xl pointer-events-auto transition-transform hover:scale-[1.02]">
+<h3 class="font-label-sm text-outline tracking-widest uppercase mb-4 flex items-center">
+<span class="material-symbols-outlined mr-2 text-sm">public</span>
+                Global Status
+            </h3>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<div class="font-label-sm text-on-surface-variant mb-1">Current Anomaly</div>
+<div class="font-display-lg text-error text-3xl font-bold">+1.18°C</div>
+<div class="font-label-sm text-outline mt-1">vs 1951-1980 avg</div>
+</div>
+<div>
+<div class="font-label-sm text-on-surface-variant mb-1">CO2 Level</div>
+<div class="font-display-lg text-secondary text-3xl font-bold">421 ppm</div>
+<div class="font-label-sm text-outline mt-1">Mauna Loa Obs.</div>
+</div>
+</div>
+</div>
+<!-- Regional Highlights -->
+<div class="glass-panel p-6 rounded-2xl pointer-events-auto flex-1 flex flex-col">
+<h3 class="font-label-sm text-outline tracking-widest uppercase mb-4 flex items-center">
+<span class="material-symbols-outlined mr-2 text-sm">warning</span>
+                Active Anomalies
+            </h3>
+<div class="space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+<div class="bg-surface/50 border border-error/20 p-3 rounded-lg flex justify-between items-center group hover:bg-surface transition-colors cursor-pointer" onclick="highlightRegion('siberia')">
+<div>
+<div class="font-label-md text-on-surface group-hover:text-error transition-colors">Siberian Heatwave</div>
+<div class="font-label-sm text-outline">Extreme duration</div>
+</div>
+<div class="font-label-md text-error bg-error/10 px-2 py-1 rounded">
+                        +5.4°C
+                    </div>
+</div>
+<div class="bg-surface/50 border border-secondary-fixed/20 p-3 rounded-lg flex justify-between items-center group hover:bg-surface transition-colors cursor-pointer">
+<div>
+<div class="font-label-md text-on-surface group-hover:text-secondary-fixed transition-colors">Equatorial Pacific</div>
+<div class="font-label-sm text-outline">La Niña phase</div>
+</div>
+<div class="font-label-md text-secondary-fixed bg-secondary-fixed/10 px-2 py-1 rounded">
+                        -1.2°C
+                    </div>
+</div>
+<div class="bg-surface/50 border border-error/20 p-3 rounded-lg flex justify-between items-center group hover:bg-surface transition-colors cursor-pointer">
+<div>
+<div class="font-label-md text-on-surface group-hover:text-error transition-colors">North Atlantic</div>
+<div class="font-label-sm text-outline">SST anomaly</div>
+</div>
+<div class="font-label-md text-error bg-error/10 px-2 py-1 rounded">
+                        +2.1°C
+                    </div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Footer JSON Component -->
+<footer class="fixed bottom-0 left-0 w-full z-30 flex justify-between items-center px-margin-desktop py-2 bg-surface-container-lowest/50 dark:bg-surface-container-lowest/50 backdrop-blur-md text-outline dark:text-outline font-label-sm text-label-sm border-t border-white/5">
+<div>
+            © 2024 BioScan Monitoring. Data provided by NASA, EPA, and USGS.
+        </div>
+<div class="flex space-x-4">
+<a class="text-outline hover:text-secondary underline-offset-4 hover:underline" href="#">Privacy Policy</a>
+<a class="text-outline hover:text-secondary underline-offset-4 hover:underline" href="#">Terms of Service</a>
+<a class="text-outline hover:text-secondary underline-offset-4 hover:underline" href="#">API Docs</a>
+</div>
+</footer>
+<script>
+        function toggleTooltip(id) {
+            const el = document.getElementById(id);
+            if (el.classList.contains('opacity-0')) {
+                // Hide others first (simple implementation)
+                document.querySelectorAll('[id^="tooltip-"]').forEach(t => t.classList.add('opacity-0'));
+                el.classList.remove('opacity-0');
+            } else {
+                el.classList.add('opacity-0');
+            }
+        }
+    </script>
+</body></html>

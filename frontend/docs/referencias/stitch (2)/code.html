@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BioScan - Local Environment View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#c5c6cb",
+                    "on-tertiary-container": "#008496",
+                    "secondary-fixed": "#74f5ff",
+                    "on-error": "#690005",
+                    "surface-container-highest": "#273647",
+                    "tertiary-fixed-dim": "#43d8f2",
+                    "on-surface-variant": "#c6c6ca",
+                    "tertiary": "#43d8f2",
+                    "surface-container": "#122131",
+                    "on-background": "#d4e4fa",
+                    "surface-variant": "#273647",
+                    "on-tertiary-fixed": "#001f25",
+                    "surface-dim": "#051424",
+                    "outline": "#8f9195",
+                    "inverse-primary": "#5c5e63",
+                    "background": "#051424",
+                    "on-primary": "#2e3134",
+                    "on-primary-fixed": "#191c1f",
+                    "on-secondary": "#00363a",
+                    "secondary-container": "#00f1fe",
+                    "on-tertiary-fixed-variant": "#004e5a",
+                    "inverse-on-surface": "#233143",
+                    "on-secondary-container": "#006a70",
+                    "inverse-surface": "#d4e4fa",
+                    "error-container": "#93000a",
+                    "tertiary-fixed": "#a2eeff",
+                    "secondary": "#ddfcff",
+                    "on-surface": "#d4e4fa",
+                    "surface-container-lowest": "#010f1f",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-high": "#1c2b3c",
+                    "tertiary-container": "#00080b",
+                    "on-secondary-fixed": "#002022",
+                    "outline-variant": "#45474a",
+                    "on-primary-container": "#76787d",
+                    "primary-fixed": "#e1e2e7",
+                    "surface-bright": "#2c3a4c",
+                    "on-secondary-fixed-variant": "#004f54",
+                    "primary-container": "#05070a",
+                    "surface": "#051424",
+                    "on-tertiary": "#00363e",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#00dbe7",
+                    "primary": "#c5c6cb",
+                    "primary-fixed-dim": "#c5c6cb",
+                    "surface-container-low": "#0d1c2d",
+                    "on-primary-fixed-variant": "#44474b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "8px",
+                    "margin-desktop": "32px",
+                    "top-bar-height": "64px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "sidebar-width": "320px"
+            },
+            "fontFamily": {
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-lg-mobile": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Inter"
+                    ],
+                    "label-md": [
+                            "JetBrains Mono"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "JetBrains Mono"
+                    ]
+            },
+            "fontSize": {
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.3",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>body {
+    background-color: #05070A;
+    /* Deep Background */
+    color: #d4e4fa;
+    /* text-on-surface */
+    overflow: hidden;
+    /* Prevent scrolling, focus on canvas */
+    }
+/* Map Background Simulation */
+.map-bg {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuB5257QeXvvFhraA3xUR8EjGZvVw6U4m0EJd5BcoTrDj5sSQEMdeWrNyVfzBfIvMGxYnf1jktHl1CixZiGDjDtsztwJb7tWn8mzvKxwKtwnbYHhPcsbBZMBLVOAqDUhpIubO195RYwAQHT7ZNoZOw0DhmxIhZAwgY4m-FJfRLEtVO5AoB5uH4v4bVHjiCjT2l49sYF0QfKYvC2EZP1APCFP1wg20YFYKEqG1i0JXRRt4Eq9uK7upMEwy2Xzoo76X0F0SXz8cQ3LFwg);
+    background-size: cover;
+    background-position: center;
+    opacity: 0.4;
+    filter: grayscale(80%) sepia(20%) hue-rotate(180deg) brightness(0.6);
+    mix-blend-mode: overlay
+    }
+.glass-panel {
+    background-color: rgba(5, 20, 36, 0.8);
+    /* surface/80 */
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1)
+    }
+.active-glass-panel {
+    background-color: rgba(5, 20, 36, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    /* Cyan border */
+    box-shadow: inset 0 0 20px rgba(0, 242, 255, 0.05);
+    /* Inner Glow */
+    }
+.hud-icon {
+    stroke-width: 2px;
+    fill: none
+    }</style>
+</head>
+<body class="antialiased font-body-md text-body-md h-screen w-screen flex flex-col relative">
+<!-- Ambient Map Background -->
+<div class="absolute inset-0 z-0 map-bg pointer-events-none" data-alt="An immersive, high-resolution satellite map view of Lisbon, Portugal, rendered in a dark, atmospheric color palette. The map features deep indigo oceans and stark, dark terrain, with subtle cyan overlays tracing major topographical features. A soft, glowing vignette frames the map, focusing attention on the center where a glowing data marker sits. The overall aesthetic is highly technical, scientific, and slightly mysterious, fitting for an advanced environmental monitoring dashboard." data-location="Lisbon, Portugal" style=""></div>
+<!-- TopNavBar -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-top-bar-height bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 flat no shadows hidden md:flex">
+<div class="flex items-center gap-4">
+<span class="font-display-lg text-display-lg font-bold text-on-surface dark:text-on-surface">BioScan</span>
+</div>
+<div class="flex items-center gap-6">
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Fire</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Ocean</a>
+<a class="text-secondary-container font-bold border-b-2 border-secondary-container pb-1 hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Climate</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200 scale-95 active:scale-90 transition-transform" href="#">Forests</a>
+</div>
+<div class="flex items-center gap-4">
+<button aria-label="sync" class="text-primary hover:text-secondary transition-colors">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+<button aria-label="settings" class="text-primary hover:text-secondary transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-bright border border-outline overflow-hidden">
+<img alt="Researcher Profile" class="w-full h-full object-cover" data-alt="A close-up, dramatic portrait of a male researcher looking focused, bathed in cool, high-contrast cyan and deep blue light. The lighting highlights the contours of his face, suggesting a high-tech laboratory or monitoring room environment. The background is completely dark, ensuring the focus remains on his intense expression. The image feels professional, serious, and cinematic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmlLl4_KPdBeMf_KKekHYgzmnTSWCpMX47-H2fMH0yEyxG6UdpfGjW2C0najAl0URcXbOJls2vOJRuLp_RCC-Kj_REclV5OSgYnPGekS5T9cfatYrOgDZq6L0IwECHF4EXCTTbyEgr5NHLbDQsiWMbNcfdzZxHTnQNxcchAumgAvzfkPPGieczB7jReGCgNT2-1cw0FlYuyO5kUcxGFmJ9RBLt2EmYUzd2Plp2LzahiIW-Y5scnyOXGN2wjUhBCr7ZsRu1JkJORWo"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar (Desktop) -->
+<aside class="fixed left-0 top-top-bar-height bottom-0 w-sidebar-width z-40 flex flex-col p-base bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl rounded-r-xl border-r border-secondary/20 shadow-xl hidden md:flex transition-all duration-300 ease-in-out">
+<div class="mb-8 px-4 py-2">
+<h2 class="font-headline-md text-headline-md text-on-surface">Environmental Layers</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Global Monitoring System</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-bright/50 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="layers">layers</span>
+<span class="font-label-md text-label-md">Data Layers</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-bright/50 rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-md text-label-md">Analysis</span>
+</a>
+<a class="flex items-center gap-3 bg-secondary-container/20 text-secondary-container rounded-lg px-4 py-2 border-l-4 border-secondary-container hover:bg-surface-bright/50" href="#">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+<span class="font-label-md text-label-md">Monitoring</span>
+</a>
+</nav>
+<div class="mt-auto space-y-4">
+<button class="w-full py-2 px-4 bg-transparent border border-secondary text-secondary rounded hover:bg-secondary/10 transition-colors font-label-md text-label-md">Export Data</button>
+<div class="border-t border-white/10 pt-4 flex justify-between">
+<a class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-secondary text-label-sm font-label-sm" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="help">help</span>
+                    Help
+                </a>
+<a class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-secondary text-label-sm font-label-sm" href="#">
+<span class="material-symbols-outlined text-sm" data-icon="source">source</span>
+                    Sources
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 relative z-10 md:ml-sidebar-width mt-[64px] mb-[40px] p-gutter overflow-y-auto">
+<!-- Viewport Header (Location Focus) -->
+<div class="mb-gutter flex justify-between items-end">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[40px] text-secondary" data-icon="location_on">location_on</span>
+                    Lisbon, PT
+                </h1>
+<p class="font-label-md text-label-md text-secondary tracking-widest mt-1">38.7223° N, 9.1393° W | LOCAL METEOROLOGY</p>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-on-surface-variant">Live Sync</p>
+<p class="font-label-sm text-label-sm text-secondary font-mono">T-00:00:12s</p>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter h-full pb-8">
+<!-- Left Column: Primary Metrics -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- AQI Card -->
+<div class="active-glass-panel rounded-xl p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-20 group-hover:opacity-40 transition-opacity">
+<span class="material-symbols-outlined text-6xl text-error" data-icon="air">air</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Air Quality Index</h3>
+<div class="flex items-end gap-2 mb-4">
+<span class="font-display-lg text-[64px] text-error font-bold leading-none">142</span>
+<span class="font-label-md text-label-md text-error bg-error/20 px-2 py-1 rounded">UNHEALTHY FOR SENSITIVE GROUPS</span>
+</div>
+<div class="space-y-2 mt-4">
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<span class="font-label-sm text-label-sm text-outline">PM2.5</span>
+<span class="font-label-md text-label-md text-on-surface">52.4 µg/m³</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<span class="font-label-sm text-label-sm text-outline">PM10</span>
+<span class="font-label-md text-label-md text-on-surface">68.1 µg/m³</span>
+</div>
+<div class="flex justify-between items-center pb-2">
+<span class="font-label-sm text-label-sm text-outline">O3</span>
+<span class="font-label-md text-label-md text-on-surface">45 ppb</span>
+</div>
+</div>
+</div>
+<!-- Current Weather -->
+<div class="glass-panel rounded-xl p-6">
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="thermostat">thermostat</span>
+                        CURRENT CONDITIONS
+                    </h3>
+<div class="flex items-center gap-6">
+<span class="material-symbols-outlined text-5xl text-secondary" data-icon="partly_cloudy_day">partly_cloudy_day</span>
+<div>
+<div class="font-display-lg text-display-lg text-on-surface">24°C</div>
+<div class="font-label-md text-label-md text-secondary">Partly Cloudy</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-6">
+<div>
+<p class="font-label-sm text-label-sm text-outline mb-1">WIND</p>
+<p class="font-label-md text-label-md text-on-surface">NW 18 km/h</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-outline mb-1">HUMIDITY</p>
+<p class="font-label-md text-label-md text-on-surface">65%</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Alerts & Trends -->
+<div class="md:col-span-8 flex flex-col gap-gutter">
+<!-- Local Alert Panel -->
+<div class="glass-panel rounded-xl border border-error/30 p-6 bg-error/5 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error"></div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-error text-3xl mt-1" data-icon="warning">warning</span>
+<div>
+<h2 class="font-headline-lg text-headline-lg text-error mb-2">Regional Particulate Alert</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-4">Elevated PM2.5 levels detected. Trajectory models indicate atmospheric transport of smoke particulates originating from severe wildfires in the central Iberian Peninsula.</p>
+<div class="bg-surface/50 rounded border border-white/5 p-4 flex gap-4 items-center">
+<div class="w-16 h-16 rounded bg-surface-bright flex items-center justify-center shrink-0 border border-white/10">
+<span class="material-symbols-outlined text-outline text-2xl" data-icon="public">public</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface">Global Trend Impact</h4>
+<p class="font-label-sm text-label-sm text-outline mt-1">Distant fire events are altering local microclimates. Dispersion models suggest current conditions will persist for 48 hours before wind sheer shifts direction.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Data Visualization Placeholder (Graph) -->
+<div class="glass-panel rounded-xl p-6 flex-1 min-h-[300px] flex flex-col">
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="monitoring">monitoring</span>
+                        72-HOUR AQI FORECAST
+                    </h3>
+<!-- Abstract Graphic Representation of a Chart -->
+<div class="flex-1 w-full relative flex items-end justify-between px-4 pb-4 border-b border-l border-white/10">
+<!-- Y-Axis Labels -->
+<div class="absolute left-0 top-0 bottom-0 flex flex-col justify-between -ml-8 text-label-sm font-label-sm text-outline py-4">
+<span>200</span>
+<span>150</span>
+<span>100</span>
+<span>50</span>
+</div>
+<!-- Bars -->
+<div class="w-8 h-[40%] bg-secondary/30 rounded-t border-t border-secondary hover:bg-secondary/50 transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 font-label-sm text-secondary bg-surface px-2 py-1 rounded">65</div>
+</div>
+<div class="w-8 h-[60%] bg-secondary/30 rounded-t border-t border-secondary hover:bg-secondary/50 transition-colors"></div>
+<div class="w-8 h-[85%] bg-error/50 rounded-t border-t border-error hover:bg-error/70 transition-colors relative group">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 font-label-sm text-error bg-surface px-2 py-1 rounded border border-error/50">142</div>
+</div>
+<div class="w-8 h-[95%] bg-error/50 rounded-t border-t border-error hover:bg-error/70 transition-colors"></div>
+<div class="w-8 h-[70%] bg-warning/50 rounded-t border-t border-yellow-500 hover:bg-warning/70 transition-colors" style="background-color: rgba(234, 179, 8, 0.3); border-color: rgba(234, 179, 8, 0.8);"></div>
+<div class="w-8 h-[45%] bg-secondary/30 rounded-t border-t border-secondary hover:bg-secondary/50 transition-colors"></div>
+<div class="w-8 h-[30%] bg-secondary/30 rounded-t border-t border-secondary hover:bg-secondary/50 transition-colors"></div>
+</div>
+<!-- X-Axis Labels -->
+<div class="w-full flex justify-between px-4 pt-2 font-label-sm text-label-sm text-outline">
+<span>-48h</span>
+<span>-24h</span>
+<span class="text-secondary font-bold">NOW</span>
+<span>+24h</span>
+<span>+48h</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full z-30 flex justify-between items-center px-margin-desktop py-2 bg-surface-container-lowest/50 dark:bg-surface-container-lowest/50 backdrop-blur-md border-t border-white/5 flat">
+<p class="font-label-sm text-label-sm text-outline dark:text-outline">© 2024 BioScan Monitoring. Data provided by NASA, EPA, and USGS.</p>
+<div class="flex gap-4">
+<a class="font-label-sm text-label-sm text-outline hover:text-secondary underline-offset-4 hover:underline" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-outline hover:text-secondary underline-offset-4 hover:underline" href="#">Terms of Service</a>
+<a class="font-label-sm text-label-sm text-outline hover:text-secondary underline-offset-4 hover:underline" href="#">API Docs</a>
+</div>
+</footer>
+</body></html>
