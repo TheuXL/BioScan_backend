@@ -25,5 +25,5 @@ export const HTTP_CONFIG = {
   USER_AGENT: 'BioScan-Backend/1.0 (EPA-R9-MarineDebris-proxy)',
   MAX_WHERE_LEN: 500,
   DEFAULT_RESULT_RECORD_COUNT: 25,
-  MAX_RESULT_RECORD_COUNT: 1000
+  MAX_RESULT_RECORD_COUNT: 5000
 } as const;

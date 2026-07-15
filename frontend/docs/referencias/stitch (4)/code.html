@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BioScan - Ocean Health View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#c5c6cb",
+                        "on-tertiary-container": "#008496",
+                        "secondary-fixed": "#74f5ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#273647",
+                        "tertiary-fixed-dim": "#43d8f2",
+                        "on-surface-variant": "#c6c6ca",
+                        "tertiary": "#43d8f2",
+                        "surface-container": "#122131",
+                        "on-background": "#d4e4fa",
+                        "surface-variant": "#273647",
+                        "on-tertiary-fixed": "#001f25",
+                        "surface-dim": "#051424",
+                        "outline": "#8f9195",
+                        "inverse-primary": "#5c5e63",
+                        "background": "#051424",
+                        "on-primary": "#2e3134",
+                        "on-primary-fixed": "#191c1f",
+                        "on-secondary": "#00363a",
+                        "secondary-container": "#00f1fe",
+                        "on-tertiary-fixed-variant": "#004e5a",
+                        "inverse-on-surface": "#233143",
+                        "on-secondary-container": "#006a70",
+                        "inverse-surface": "#d4e4fa",
+                        "error-container": "#93000a",
+                        "tertiary-fixed": "#a2eeff",
+                        "secondary": "#ddfcff",
+                        "on-surface": "#d4e4fa",
+                        "surface-container-lowest": "#010f1f",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#1c2b3c",
+                        "tertiary-container": "#00080b",
+                        "on-secondary-fixed": "#002022",
+                        "outline-variant": "#45474a",
+                        "on-primary-container": "#76787d",
+                        "primary-fixed": "#e1e2e7",
+                        "surface-bright": "#2c3a4c",
+                        "on-secondary-fixed-variant": "#004f54",
+                        "primary-container": "#05070a",
+                        "surface": "#051424",
+                        "on-tertiary": "#00363e",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#00dbe7",
+                        "primary": "#c5c6cb",
+                        "primary-fixed-dim": "#c5c6cb",
+                        "surface-container-low": "#0d1c2d",
+                        "on-primary-fixed-variant": "#44474b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin-desktop": "32px",
+                        "top-bar-height": "64px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "sidebar-width": "320px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #05070A; /* Level 0 (Base) */
+            color: #d4e4fa;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(143, 145, 149, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(143, 145, 149, 0.5);
+        }
+        .glass-panel {
+            background: rgba(5, 20, 36, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .active-card {
+            border: 1px solid rgba(0, 242, 255, 0.2);
+        }
+        .interactive-element:hover {
+            box-shadow: inset 0 0 10px rgba(0, 242, 255, 0.1);
+            border-color: rgba(0, 242, 255, 0.4);
+        }
+        .globe-container {
+            background-image: radial-gradient(circle at center, rgba(0, 241, 254, 0.1) 0%, transparent 70%);
+        }
+        
+        /* New Animations */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes spin-slow-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 60s linear infinite;
+        }
+        .animate-atmosphere {
+            animation: spin-slow-reverse 45s linear infinite;
+        }
+        .animate-breathe {
+            animation: breathe 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-primary-container text-on-surface font-body-md h-screen overflow-hidden flex flex-col selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-desktop h-top-bar-height bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-b border-white/10 hidden md:flex">
+<div class="flex items-center gap-8">
+<div class="font-display-lg text-display-lg font-bold text-on-surface dark:text-on-surface tracking-tight" style="font-size: 28px;">BioScan</div>
+<div class="flex items-center gap-6">
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200" href="#">Fire</a>
+<a class="text-secondary-container font-bold border-b-2 border-secondary-container pb-1 hover:text-secondary transition-colors duration-200" href="#">Ocean</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200" href="#">Climate</a>
+<a class="text-on-surface-variant font-medium hover:text-secondary transition-colors duration-200" href="#">Forests</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="scale-95 active:scale-90 transition-transform text-secondary dark:text-secondary hover:text-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sync</span>
+</button>
+<button class="scale-95 active:scale-90 transition-transform text-secondary dark:text-secondary hover:text-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-white/10 ml-2">
+<img alt="Researcher Profile" class="w-full h-full object-cover" data-alt="A small, circular avatar portrait of a researcher in a sleek, dimly lit high-tech environment. The lighting is moody with subtle cyan edge highlights, fitting a dark mode minimalist UI. The aesthetic is professional and scientific." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJKFvAayeHzBJqJX-AffO2M8N82vOTa6KVGWcAE3t9YfpRaJw6KhNUQt2qFoSX0gKNUWj79Wsg1dMUBL8KuyngQLa27ACjJcWJDBTSMsKxTd-Ft0WdO8jP72nWcHSmULh6MWwOkC_XGuhAC5hL1hzqHth-LoZY8EgOXHnxqeci3q15QBouFPandD19q2lzdZrsOda2UiAQvwtgXEbblqAGEjskA0uJNFcN5HDt_BbxSlUW0EYOZpnB4D_yo0OS57QDDfsceXhZPC8"/>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 relative w-full h-full pt-top-bar-height flex">
+<!-- SideNavBar (Left Panel) -->
+<aside class="fixed left-0 top-top-bar-height bottom-0 w-sidebar-width z-40 flex flex-col p-base bg-surface-container/80 dark:bg-surface-container/80 backdrop-blur-xl border-r border-secondary/20 shadow-xl hidden md:flex">
+<div class="mb-8 px-4 py-2 mt-4">
+<div class="flex items-center gap-3 mb-2">
+<div class="w-10 h-10 rounded-lg bg-surface-bright flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-secondary-container">water</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface text-xl">Environmental Layers</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant text-xs mt-1">Global Monitoring System</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2 overflow-y-auto">
+<button class="flex items-center gap-3 bg-secondary-container/20 text-secondary-container rounded-lg px-4 py-2 border-l-4 border-secondary-container transition-all duration-300 ease-in-out">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">layers</span>
+<span class="font-label-md text-label-md">Data Layers</span>
+</button>
+<button class="flex items-center gap-3 text-on-surface-variant px-4 py-2 rounded-lg hover:bg-surface-bright/50 transition-all duration-300 ease-in-out">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-md text-label-md">Analysis</span>
+</button>
+<button class="flex items-center gap-3 text-on-surface-variant px-4 py-2 rounded-lg hover:bg-surface-bright/50 transition-all duration-300 ease-in-out">
+<span class="material-symbols-outlined">sensors</span>
+<span class="font-label-md text-label-md">Monitoring</span>
+</button>
+</nav>
+<div class="mt-auto flex flex-col gap-4 pt-4 border-t border-white/10">
+<div class="flex gap-2 px-2">
+<button class="flex items-center gap-2 text-on-surface-variant text-xs hover:text-secondary-container transition-colors">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-label-sm text-label-sm">Help</span>
+</button>
+<span class="text-white/10">|</span>
+<button class="flex items-center gap-2 text-on-surface-variant text-xs hover:text-secondary-container transition-colors">
+<span class="material-symbols-outlined text-sm">source</span>
+<span class="font-label-sm text-label-sm">Sources</span>
+</button>
+</div>
+<button class="w-full bg-secondary-container/10 border border-secondary-container text-secondary-container font-label-md text-label-md py-2 px-4 rounded-lg hover:bg-secondary-container/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">download</span>
+                    Export Data
+                </button>
+</div>
+</aside>
+<!-- Central Visualization Canvas (3D Globe Area) -->
+<div class="flex-1 relative globe-container md:ml-sidebar-width flex items-center justify-center overflow-hidden z-0">
+<!-- Simulated Globe Graphic -->
+<div class="relative w-[600px] h-[600px] rounded-full border border-secondary/20 shadow-[0_0_80px_rgba(0,242,255,0.1)] flex items-center justify-center overflow-hidden">
+<img alt="Earth Globe Dark" class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-screen animate-spin-slow" data-alt="A highly detailed, realistic 3D render of the Earth from space, focusing on the Pacific ocean, styled for a dark mode interface. The oceans are deep, inky blacks and dark blues, while landmasses are silhouetted. Bright, glowing cyan and white data points heavily cluster along coastlines, representing plastic pollution hotspots. The overall aesthetic is scientific, minimalist, and cinematic with high contrast." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyILfe4a1Z5IbRUbrIfCWuW_vypSIQKkwuBfZm0nETC4sDEotAM_NcSr86RkYoNLXGCurNWD6yriCZoHiMBwQ8erMAQJWo1Xr_SfT_GU5Z85Q_6afKxQoAGJZ2wOcF3qrexSptN6-7wV5SGj4ZC7tGFrtO5dI6rBokcSkuoU4S1nG4yZJHJRVL2qP3mnzIIlBXjHGJNKMLu78-vqxhb8QBLrElljOS2KKHCqPd7AwaOgYxIV9aqzFnLmkHta-6gUN-Z_PpGgbGwyI"/>
+<!-- Rotating Atmosphere Glow -->
+<div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-secondary-container/15 to-transparent animate-atmosphere pointer-events-none mix-blend-screen"></div>
+<!-- Data Overlays on Globe -->
+<div class="absolute inset-0">
+<!-- Pacific Gyre Hotspot -->
+<div class="absolute top-[40%] left-[60%] w-32 h-32 bg-secondary-container/20 rounded-full blur-xl mix-blend-screen animate-breathe origin-center"></div>
+<div class="absolute top-[42%] left-[62%] w-4 h-4 bg-secondary-container rounded-full shadow-[0_0_15px_#00f1fe] animate-breathe origin-center"></div>
+<div class="absolute top-[42%] left-[62%] -translate-x-1/2 -translate-y-[120%] flex flex-col items-center">
+<div class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-0.5 rounded border border-error/30 whitespace-nowrap backdrop-blur-md">
+                            CRITICAL: Debris Mass
+                        </div>
+<div class="w-px h-4 bg-secondary-container"></div>
+</div>
+<!-- Sea Level Vulnerability Indicator -->
+<div class="absolute top-[55%] left-[30%]">
+<div class="w-8 h-8 rounded-full border border-tertiary-fixed-dim/50 flex items-center justify-center animate-[spin_4s_linear_infinite]">
+<div class="w-6 h-6 border-t-2 border-tertiary-fixed-dim rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Inner Glow for globe sphere effect -->
+<div class="absolute inset-0 rounded-full shadow-[inset_0_0_60px_rgba(5,20,36,1)] pointer-events-none"></div>
+</div>
+<!-- View Controls Floating -->
+<div class="absolute bottom-margin-desktop left-1/2 -translate-x-1/2 glass-panel rounded-full px-6 py-2 flex gap-6 items-center z-20">
+<button class="text-secondary-container flex flex-col items-center gap-1 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-sm">public</span>
+<span class="font-label-sm text-[10px] uppercase tracking-widest text-secondary-container">Pollution</span>
+</button>
+<div class="w-px h-6 bg-white/10"></div>
+<button class="text-outline flex flex-col items-center gap-1 hover:text-on-surface transition-colors active:scale-95">
+<span class="material-symbols-outlined text-sm">water_drop</span>
+<span class="font-label-sm text-[10px] uppercase tracking-widest">Currents</span>
+</button>
+<div class="w-px h-6 bg-white/10"></div>
+<button class="text-outline flex flex-col items-center gap-1 hover:text-on-surface transition-colors active:scale-95">
+<span class="material-symbols-outlined text-sm">thermostat</span>
+<span class="font-label-sm text-[10px] uppercase tracking-widest">Thermal</span>
+</button>
+</div>
+</div>
+<!-- Right Detail Panel (Ocean Vitals) -->
+<aside class="w-[360px] h-full border-l border-white/10 bg-surface/50 backdrop-blur-md p-6 flex flex-col gap-6 overflow-y-auto hidden lg:flex relative z-10">
+<header class="flex justify-between items-center pb-4 border-b border-white/5">
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Ocean Vitals</h3>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">Real-time telemetry</p>
+</div>
+<button class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">more_horiz</span>
+</button>
+</header>
+<!-- Metric 1: Acidification -->
+<div class="glass-panel rounded-xl p-4 active-card interactive-element transition-all">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-secondary-fixed-dim">science</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-xs">Ph Levels</span>
+</div>
+<span class="bg-surface-bright text-on-surface font-label-sm text-[10px] px-1.5 py-0.5 rounded border border-white/5">Global Avg</span>
+</div>
+<div class="flex items-end gap-2 mb-3">
+<span class="font-display-lg text-4xl font-bold text-on-surface">8.07</span>
+<span class="font-label-md text-error flex items-center mb-1 text-xs">
+<span class="material-symbols-outlined text-xs">arrow_downward</span> 0.02
+                    </span>
+</div>
+<!-- Sparkline placeholder -->
+<div class="h-10 w-full relative">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 20">
+<path d="M0,10 L20,12 L40,8 L60,15 L80,5 L100,18" fill="none" stroke="rgba(0, 242, 255, 0.4)" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+<path d="M0,20 L0,10 L20,12 L40,8 L60,15 L80,5 L100,18 L100,20 Z" fill="url(#grad)" opacity="0.2"></path>
+<defs>
+<lineargradient id="grad" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#00f1fe" stop-opacity="1"></stop>
+<stop offset="100%" stop-color="#00f1fe" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+</div>
+<!-- Metric 2: Temperature -->
+<div class="glass-panel rounded-xl p-4 interactive-element transition-all">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm text-error">thermostat</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-xs">SST Anomaly</span>
+</div>
+</div>
+<div class="flex items-end gap-2 mb-3">
+<span class="font-display-lg text-3xl font-bold text-on-surface">+1.2°C</span>
+<span class="font-label-md text-error flex items-center mb-1 text-xs">
+<span class="material-symbols-outlined text-xs">warning</span> High
+                    </span>
+</div>
+<div class="w-full bg-surface-bright h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full w-[75%] rounded-full shadow-[0_0_10px_rgba(255,180,171,0.5)]"></div>
+</div>
+</div>
+<!-- Focus Area: Marine Debris -->
+<div class="mt-4 border-t border-white/5 pt-4">
+<h4 class="font-headline-md text-lg text-on-surface mb-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-container text-sm">delete_sweep</span>
+                    Debris Hotspots
+                </h4>
+<div class="space-y-2">
+<div class="flex justify-between items-center bg-surface-container-low p-2 rounded-lg border border-white/5">
+<span class="font-label-md text-sm text-on-surface">Great Pacific Patch</span>
+<span class="font-label-md text-xs text-secondary-container bg-secondary-container/10 px-2 py-1 rounded">Tracking</span>
+</div>
+<div class="flex justify-between items-center bg-surface-container-low p-2 rounded-lg border border-white/5">
+<span class="font-label-md text-sm text-outline">Indian Ocean Gyre</span>
+<span class="font-label-md text-xs text-outline border border-white/10 px-2 py-1 rounded">Stable</span>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full z-30 flex justify-between items-center px-margin-desktop py-2 bg-surface-container-lowest/50 dark:bg-surface-container-lowest/50 backdrop-blur-md border-t border-white/5 hidden md:flex">
+<div class="font-label-sm text-label-sm text-outline dark:text-outline">
+            © 2024 BioScan Monitoring. Data provided by NASA, EPA, and USGS.
+        </div>
+<div class="flex gap-6">
+<a class="font-label-sm text-label-sm text-outline underline-offset-4 hover:underline hover:text-secondary" href="#">Privacy Policy</a>
+<a class="font-label-sm text-label-sm text-outline underline-offset-4 hover:underline hover:text-secondary" href="#">Terms of Service</a>
+<a class="font-label-sm text-label-sm text-outline underline-offset-4 hover:underline hover:text-secondary" href="#">API Docs</a>
+</div>
+</footer>
+</body></html>

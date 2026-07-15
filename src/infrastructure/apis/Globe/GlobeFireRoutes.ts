@@ -18,7 +18,12 @@ import {
  */
 export function createGlobeFireRoutes(
   router: Router,
-  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService; glims: GlimsService; seaIce: SeaIceService;  }
+  deps: { 
+    usgs: UsgsEarthquakeService; 
+    ocean: OceanPollutionService; 
+    glims: GlimsService; 
+    seaIce: SeaIceService; 
+  }
 ): Router {
   const controller = new GlobeController(deps);
 
@@ -34,10 +39,15 @@ export function createGlobeFireRoutes(
           nomeExibicao: 'NASA FIRMS (via BioScan / Mongo)',
           caminho: '/api/fire/nasa',
           origemDadosUpstream: '/api/fires',
-          parametrosQuery: ['limit', 'source', 'startDate', 'endDate']
+          parametrosQuery: ['limit', 'offset', 'source', 'startDate', 'endDate']
         }
       ],
-      limiteGlobo: { padrao: LIMITS.DEFAULT, min: LIMITS.MIN, max: LIMITS.MAX },
+      limiteGlobo: {
+        padrao: LIMITS.DEFAULT,
+        min: LIMITS.MIN,
+        max: LIMITS.MAX,
+        offset: true
+      },
       indiceAgregado: '/api/globe'
     });
   });

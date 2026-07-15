@@ -11,6 +11,15 @@ export function validateOccurrenceListQuery(req: Request, res: Response, next: N
     return;
   }
 
+  const offsetRaw = req.query.offset;
+  if (offsetRaw !== undefined && offsetRaw !== null && String(offsetRaw) !== '') {
+    const offset = Number.parseInt(String(offsetRaw), 10);
+    if (!Number.isInteger(offset) || offset < 0) {
+      res.status(400).json({ message: 'offset deve ser inteiro ≥ 0.' });
+      return;
+    }
+  }
+
   const cat = req.query.category;
   if (cat !== undefined && cat !== null && String(cat).trim() !== '') {
     const c = String(cat).trim().toUpperCase();

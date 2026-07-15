@@ -83,6 +83,7 @@ describe('GLIMS module', () => {
 
   test('should pass validated GeoJSON query to the service without width or height', async () => {
     const service = {
+      resolveLayer: jest.fn((layerName) => layerName),
       getLayerGeoJson: jest.fn().mockResolvedValue({ type: 'FeatureCollection', features: [] })
     };
     const app = createApp(service);

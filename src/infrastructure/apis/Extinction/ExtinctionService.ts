@@ -243,6 +243,7 @@ export class ExtinctionService {
 
   async listOccurrences(filters: {
     limit: number;
+    offset?: number;
     category?: string;
     minLatitude?: number;
     maxLatitude?: number;
@@ -250,9 +251,11 @@ export class ExtinctionService {
     maxLongitude?: number;
   }): Promise<IThreatenedOccurrence[]> {
     const q = this.buildMongoFilter(filters);
+    const offset = filters.offset ?? 0;
 
     return ThreatenedOccurrenceModel.find(q)
       .sort({ lastSyncedAt: -1 })
+      .skip(offset)
       .limit(filters.limit)
       .lean()
       .exec();

@@ -18,17 +18,39 @@ import {
 } from './GlobeNormalization';
 
 /** Helper para envelopar a resposta no contrato GlobeV1 */
-function envelope(camadaId: string, pontos: RespostaCamadaGloboV1['pontos'], totalMatching?: number): RespostaCamadaGloboV1 {
+function envelope(
+  camadaId: string,
+  pontos: RespostaCamadaGloboV1['pontos'],
+  opts?: { totalMatching?: number; offset?: number; limit?: number; hasMore?: boolean }
+): RespostaCamadaGloboV1 {
+  const offset = opts?.offset ?? 0;
+  const limit = opts?.limit;
+  const totalMatching = opts?.totalMatching;
+
   const out: RespostaCamadaGloboV1 = {
     schemaVersion: GLOBE_SCHEMA_VERSION,
     camada: camadaId,
     count: pontos.length,
     pontos
   };
-  if (totalMatching !== undefined) {
-    out.totalMatching = totalMatching;
+
+  if (totalMatching !== undefined) out.totalMatching = totalMatching;
+  if (offset !== undefined) out.offset = offset;
+  if (limit !== undefined) out.limit = limit;
+
+  if (opts?.hasMore !== undefined) {
+    out.hasMore = opts.hasMore;
+  } else if (totalMatching !== undefined && limit !== undefined) {
+    out.hasMore = offset + pontos.length < totalMatching;
   }
   return out;
+}
+
+function parseOffset(req: Request): number {
+  const raw = req.query.offset;
+  if (raw === undefined || raw === null || String(raw) === '') return 0;
+  const n = Number.parseInt(String(raw), 10);
+  return Number.isInteger(n) && n >= 0 ? n : 0;
 }
 
 export class GlobeController {
@@ -54,7 +76,7 @@ export class GlobeController {
           caminho: '/api/fire/nasa',
           indiceFornecedores: '/api/fire',
           origemUpstream: '/api/fires',
-          parametrosQuery: ['limit', 'source', 'startDate', 'endDate']
+          parametrosQuery: ['limit', 'offset', 'source', 'startDate', 'endDate']
         },
         {
           id: 'ameacada_gbif',
@@ -62,14 +84,14 @@ export class GlobeController {
           caminho: '/api/globe/especies-ameacadas',
           origemUpstream: '/api/extinction',
           requisitosMongo: true,
-          parametrosQuery: ['limit', 'category', 'minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude']
+          parametrosQuery: ['limit', 'offset', 'category', 'minLatitude', 'maxLatitude', 'minLongitude', 'maxLongitude']
         },
         {
           id: 'sismo',
           metodoHttp: 'GET',
           caminho: '/api/globe/sismos',
           origemUpstream: '/api/earthquakes',
-          parametrosQuery: ['limit', '+ parâmetros USGS (starttime, endtime, minmagnitude, ...)']
+          parametrosQuery: ['limit', 'offset', '+ parâmetros USGS (starttime, endtime, minmagnitude, ...)']
         },
         {
           id: 'lixo_marinho',
@@ -77,7 +99,7 @@ export class GlobeController {
           caminho: '/api/ocean/epa',
           indiceFornecedores: '/api/ocean',
           origemUpstream: '/api/ocean-pollution',
-          parametrosQuery: ['limit', 'dataset', 'layerId', 'where', 'resultRecordCount']
+          parametrosQuery: ['limit', 'offset', 'dataset', 'layerId', 'where', 'resultRecordCount']
         },
         {
           id: 'geleira',
@@ -85,7 +107,7 @@ export class GlobeController {
           caminho: '/api/globe/geleiras',
           indiceFornecedores: '/api/glaciers',
           origemUpstream: '/api/glaciers',
-          parametrosQuery: ['layer', 'bbox', 'feature_count']
+          parametrosQuery: ['limit', 'offset', 'layer', 'bbox', 'feature_count']
         },
         {
           id: 'sea_ice',
@@ -93,11 +115,17 @@ export class GlobeController {
           caminho: '/api/globe/sea-ice',
           indiceFornecedores: '/api/sea-ice',
           origemUpstream: '/api/sea-ice',
-          parametrosQuery: ['layerName', 'bbox', 'feature_count']
+          parametrosQuery: ['limit', 'offset', 'layerName', 'bbox', 'feature_count']
         }
       ],
       tipoValoresGlobe: [...GLOBE_LAYER_IDS],
-      limiteGlobo: { padrao: LIMITS.DEFAULT, min: LIMITS.MIN, max: LIMITS.MAX }
+      limiteGlobo: {
+        padrao: LIMITS.DEFAULT,
+        min: LIMITS.MIN,
+        max: LIMITS.MAX,
+        offset: true,
+        nota: 'Use limit+offset para percorrer todo o totalMatching; um pedido pode ir até MAX.'
+      }
     });
   }
 
@@ -109,6 +137,7 @@ export class GlobeController {
       }
 
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
+      const offset = parseOffset(req);
       const { source, startDate, endDate } = req.query;
 
       const query: Record<string, unknown> = {};
@@ -120,11 +149,16 @@ export class GlobeController {
       }
 
       const totalMatching = await NasaFireModel.countDocuments(query);
-      const docs = await NasaFireModel.find(query).sort({ acq_date: -1 }).limit(limit).lean();
+      const docs = await NasaFireModel.find(query)
+        .sort({ acq_date: -1, acq_time: -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean();
+
       const pontos = docs.map((d) => normalizarIncendio(d as any));
-      res.status(200).json(envelope('incendio', pontos, totalMatching));
+      res.status(200).json(envelope('incendio', pontos, { totalMatching, offset, limit }));
     } catch (error: any) {
-      res.status(500).json({ message: 'Erro em incêndios.', error: error.message });
+      res.status(500).json({ message: 'Erro ao montar camada incêndios.', error: error.message });
     }
   }
 
@@ -137,19 +171,24 @@ export class GlobeController {
       }
 
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
-      const category = req.query.category ? String(req.query.category).toUpperCase() : undefined;
+      const offset = parseOffset(req);
+      const category = req.query.category ? String(req.query.category).trim().toUpperCase() : undefined;
+
       const filter = {
         limit,
+        offset,
         category,
         minLatitude: req.query.minLatitude ? Number(req.query.minLatitude) : undefined,
         maxLatitude: req.query.maxLatitude ? Number(req.query.maxLatitude) : undefined,
         minLongitude: req.query.minLongitude ? Number(req.query.minLongitude) : undefined,
         maxLongitude: req.query.maxLongitude ? Number(req.query.maxLongitude) : undefined,
       };
+
       const totalMatching = await ext.countOccurrences(filter);
       const rows = await ext.listOccurrences(filter);
       const pontos = rows.map((d) => normalizarAmeacadaGbif(d as any));
-      res.status(200).json(envelope('ameacada_gbif', pontos, totalMatching));
+      
+      res.status(200).json(envelope('ameacada_gbif', pontos, { totalMatching, offset, limit }));
     } catch (error: any) {
       res.status(500).json({ message: 'Erro em espécies.', error: error.message });
     }
@@ -158,12 +197,23 @@ export class GlobeController {
   async getSismos(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
+      const offset = parseOffset(req);
+
       const base = this.deps.usgs.parseExpressQuery(req.query as any);
-      const params = { ...DEFAULT_QUERY_PARAMS, ...base, format: 'geojson', limit: String(limit) };
+      const { offset: _o, limit: _l, ...usgsRest } = base;
+      const params: Record<string, string> = {
+        ...DEFAULT_QUERY_PARAMS,
+        ...usgsRest,
+        format: 'geojson',
+        limit: String(Math.min(limit, 20000))
+      };
+      if (offset > 0) params.offset = String(offset);
+
       const raw = await this.deps.usgs.queryEvents(params);
       let pontos = geoJsonParaSismos(raw);
-      if (pontos.length > limit) pontos = pontos.slice(0, limit);
-      res.status(200).json(envelope('sismo', pontos));
+      
+      const totalMatching = raw?.metadata?.count ?? (offset + pontos.length);
+      res.status(200).json(envelope('sismo', pontos, { totalMatching, offset, limit }));
     } catch (error: any) {
       res.status(500).json({ message: 'Erro em sismos.', error: error.message });
     }
@@ -172,12 +222,23 @@ export class GlobeController {
   async getGeleiras(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
+      const offset = parseOffset(req);
       const layer = String(req.query.layer ?? 'outlines');
       const bbox = String(req.query.bbox ?? '-180,-90,180,90');
-      const raw = await this.deps.glims.getLayerGeoJson(layer, { bbox, srs: 'EPSG:4326', feature_count: limit });
+      
+      const raw = await this.deps.glims.getLayerGeoJson(layer, { 
+        bbox, 
+        srs: 'EPSG:4326', 
+        feature_count: limit + offset 
+      });
+
       let pontos = geoJsonParaGeleiras(raw);
+      const totalMatching = pontos.length;
+
+      if (offset > 0) pontos = pontos.slice(offset);
       if (pontos.length > limit) pontos = pontos.slice(0, limit);
-      res.status(200).json(envelope('geleira', pontos));
+
+      res.status(200).json(envelope('geleira', pontos, { totalMatching, offset, limit }));
     } catch (error: any) {
       res.status(500).json({ message: 'Erro em geleiras.', error: error.message });
     }
@@ -186,39 +247,48 @@ export class GlobeController {
   async getLixoMarinho(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
+      const offset = parseOffset(req);
       const dataset = req.query.dataset ? String(req.query.dataset) : EPA_R9_MARINE_DEBRIS_DATASETS[0];
-      const raw = await this.deps.ocean.queryLayerGeoJson(dataset, 1, { resultRecordCount: limit });
-      let pontos = geoJsonParaLixoMarinho(raw, dataset);
-      if (pontos.length > limit) pontos = pontos.slice(0, limit);
-      res.status(200).json(envelope('lixo_marinho', pontos));
+      const layerId = Number.parseInt(String(req.query.layerId ?? '1'), 10);
+
+      const raw = await this.deps.ocean.queryLayerGeoJson(dataset, layerId, {
+        resultRecordCount: limit,
+        resultOffset: offset,
+        where: req.query.where ? String(req.query.where) : undefined
+      });
+
+      const pontos = geoJsonParaLixoMarinho(raw, dataset);
+      res.status(200).json(envelope('lixo_marinho', pontos, { 
+        offset, 
+        limit, 
+        hasMore: pontos.length >= limit 
+      }));
     } catch (error: any) {
       res.status(500).json({ message: 'Erro em lixo marinho.', error: error.message });
     }
   }
 
- 
   async getSeaIce(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
+      const offset = parseOffset(req);
       const layer = String(req.query.layerName ?? 'extent-north');
       const bbox = String(req.query.bbox ?? '-180,60,180,90');
 
       const raw = await this.deps.seaIce.getLayerGeoJson(layer, {
         bbox,
-        feature_count: limit
+        feature_count: limit + offset
       });
 
       let pontos = geoJsonToSeaIce(raw);
+      const totalMatching = pontos.length;
 
-      if (pontos.length > limit) {
-        pontos = pontos.slice(0, limit);
-      }
+      if (offset > 0) pontos = pontos.slice(offset);
+      if (pontos.length > limit) pontos = pontos.slice(0, limit);
 
-      res.status(200).json(envelope('sea_ice', pontos));
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Globe SeaIce:', message);
-      res.status(500).json({ message: 'Error building Sea Ice layer.', error: message });
+      res.status(200).json(envelope('sea_ice', pontos, { totalMatching, offset, limit }));
+    } catch (error: any) {
+      res.status(500).json({ message: 'Erro em Sea Ice.', error: error.message });
     }
   }
 }

@@ -15,11 +15,13 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | Tiles raster (WMTS/XYZ) | Alta — textura ou overlay no globo |
 | CSV / texto tabular | Variável — parse no backend (como FIRMS/GISTEMP) |
 
+✅ = fonte **já integrada** no backend BioScan (módulo + rota REST).
+
 ---
 
 ## Já integradas ou referenciadas no repositório
 
-### NASA FIRMS (incêndios ativos)
+### ✅ NASA FIRMS (incêndios ativos)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -30,7 +32,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | `NasaFireService` → MongoDB `nasa_fire` → `GET /api/fires`. |
 | **Globo** | Pontos **lat/lon**; cor/tamanho por intensidade ou confiança. |
 
-### NASA GISTEMP (temperatura global)
+### ✅ NASA GISTEMP (temperatura global)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -41,7 +43,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | `NasaGistempService` → MongoDB `nasa_gistemp` → `GET /api/global-temperature`, `/stats`. |
 | **Globo** | Não são milhares de pontos; usar **gráfico temporal**, faixas de cor (“climate stripes”) ou painel junto ao globo. |
 
-### Nível do mar / contexto de degelo (módulo `NasaSeaLevel/`)
+### ✅ Nível do mar / contexto de degelo (módulo `NasaSeaLevel/`)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -52,7 +54,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | `GET /api/ice-melt` (live), `GET /api/ice-melt/latest`, `POST /api/ice-melt/sync`, coleção `nasa_sea_level`. |
 | **Globo** | Curva temporal ou indicador; não pontos por incêndio. |
 
-### Open-Meteo (meteorologia contextual)
+### ✅ Open-Meteo (meteorologia contextual)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -62,7 +64,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `OpenMeteo/` — proxy on-demand: `GET /api/meteo/forecast`, `GET /api/meteo/archive`, `GET /api/meteo/air-quality` (sem MongoDB). |
 | **Globo** | Contexto local ao clicar no globo ou camada “meteo”; não substitui séries longas (GISTEMP). |
 
-### USGS Earthquakes (sismos)
+### ✅ USGS Earthquakes (sismos)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -72,7 +74,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `UsgsEarthquake/` — `GET /api/earthquakes`, `GET /api/earthquakes/feed/:window` (sem MongoDB). |
 | **Globo** | **Pontos**; tamanho/cor por magnitude; profundidade em tooltip. |
 
-### NASA EONET (eventos naturais)
+### ✅ NASA EONET (eventos naturais)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -82,7 +84,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `NasaEonet/` — `GET /api/events`, `/categories`, `/sources`, `/layers` (sem MongoDB). |
 | **Globo** | Pontos, polígonos ou linhas por tipo; camadas toggláveis junto com FIRMS. |
 
-### OpenAQ (qualidade do ar — estações, API v3)
+### ✅ OpenAQ (qualidade do ar — estações, API v3)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -92,7 +94,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `OpenAq/` — `GET /api/openaq/locations`, `/locations/:id`, `/locations/:id/latest`, `/countries`, `/parameters`. |
 | **Globo** | **Pontos** por estação; complementa Open-Meteo (modelo vs medições in situ). |
 
-### Global Forest Watch — Data API (desmatamento / alertas)
+### ✅ Global Forest Watch — Data API (desmatamento / alertas)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -102,7 +104,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `GlobalForestWatch/` — `GET /api/deforestation` (info), `/ping`, `/datasets`, `/dataset/.../fields`, `/dataset/.../query/json`. |
 | **Globo** | Resultados de SQL / geostore conforme produto escolhido; respeitar termos e limites GFW. |
 
-### EPA R9 — Marine Debris (lixo marinho / observações)
+### ✅ EPA R9 — Marine Debris (lixo marinho / observações)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -112,7 +114,7 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 | **Uso BioScan** | Módulo `OceanPollution/` — `GET /api/ocean-pollution`, `/epa-r9/:dataset/metadata`, `/epa-r9/:dataset/layers/:layerId/geojson`. |
 | **Globo** | **GeoJSON** com `Point` — marcadores no globo. |
 
-### GBIF — ocorrências com categorias Lista Vermelha IUCN (índice GBIF)
+### ✅ GBIF — ocorrências com categorias Lista Vermelha IUCN (índice GBIF)
 
 | Campo | Detalhe |
 |-------|---------|
@@ -126,21 +128,21 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 
 ## Recomendadas a seguir (bom encaixe com o globo)
 
-### NASA EONET (eventos naturais)
+### ✅ NASA EONET (eventos naturais)
 
-*Integrado — ver secção **Já integradas** (`NasaEonet/`, `/api/events`).*
+*✅ Integrado — ver secção **Já integradas** (`NasaEonet/`, `/api/events`).*
 
-### USGS Earthquakes (sismos)
+### ✅ USGS Earthquakes (sismos)
 
-*Integrado — ver secção **Já integradas** (`UsgsEarthquake/`, `/api/earthquakes`).*
+*✅ Integrado — ver secção **Já integradas** (`UsgsEarthquake/`, `/api/earthquakes`).*
 
-### OpenAQ (estações — API v3)
+### ✅ OpenAQ (estações — API v3)
 
-*Integrado — ver secção **Já integradas** (`OpenAq/`, `/api/openaq`).*
+*✅ Integrado — ver secção **Já integradas** (`OpenAq/`, `/api/openaq`).*
 
-### Open-Meteo
+### ✅ Open-Meteo
 
-*Integrado — ver secção **Já integradas** (`OpenMeteo/`, `/api/meteo`).*
+*✅ Integrado — ver secção **Já integradas** (`OpenMeteo/`, `/api/meteo`).*
 
 ---
 
@@ -209,9 +211,9 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 
 ## Biodiversidade e uso do solo
 
-### Global Forest Watch (desmatamento)
+### ✅ Global Forest Watch (desmatamento)
 
-*Integrado — ver secção **Já integradas** (`GlobalForestWatch/`, `/api/deforestation`).*
+*✅ Integrado — ver secção **Já integradas** (`GlobalForestWatch/`, `/api/deforestation`).*
 
 ### IUCN Red List (espécies ameaçadas)
 
@@ -242,24 +244,24 @@ Para cada fonte: **o que traz**, **onde está a API/doc**, **como os dados chega
 
 | Tema | Fontes candidatas | Forma no globo |
 |------|-------------------|----------------|
-| **Fogo** | FIRMS (já), EONET | Pontos |
-| **Temperatura global** | GISTEMP (já) | Gráfico / painel |
-| **Sismos** | USGS (já: `/api/earthquakes`) | Pontos |
-| **Eventos naturais vários** | EONET (já: `/api/events`) | Pontos / geometrias |
-| **Ar poluído** | OpenAQ v3 (já: `/api/openaq`) | Pontos / heatmap |
-| **Nível do mar / degelo (séries)** | NASA Sea Level, NOAA | Curvas / KPI |
+| **Fogo** | ✅ FIRMS, ✅ EONET | Pontos |
+| **Temperatura global** | ✅ GISTEMP | Gráfico / painel |
+| **Sismos** | ✅ USGS (`/api/earthquakes`) | Pontos |
+| **Eventos naturais vários** | ✅ EONET (`/api/events`) | Pontos / geometrias |
+| **Ar poluído** | ✅ OpenAQ v3 (`/api/openaq`) | Pontos / heatmap |
+| **Nível do mar / degelo (séries)** | ✅ NASA Sea Level, NOAA | Curvas / KPI |
 | **Gelo / neve** | NSIDC | Camada ou série |
-| **Floresta / desmatamento** | GFW Data API (já: `/api/deforestation`) | SQL / alertas / polígonos (geostore) |
-| **Lixo marinho / observações** | EPA R9 ArcGIS (já: `/api/ocean-pollution`) | Pontos (GeoJSON) |
-| **Espécies em risco (ocorrências)** | GBIF + IUCN no índice (já: `/api/extinction`) | Pontos / clusters |
+| **Floresta / desmatamento** | ✅ GFW Data API (`/api/deforestation`) | SQL / alertas / polígonos (geostore) |
+| **Lixo marinho / observações** | ✅ EPA R9 ArcGIS (`/api/ocean-pollution`) | Pontos (GeoJSON) |
+| **Espécies em risco (ocorrências)** | ✅ GBIF + IUCN no índice (`/api/extinction`) | Pontos / clusters |
 | **Satélite “Earth view”** | GIBS | Tiles |
 | **Uso do solo** | WorldCover | Raster colorido |
-| **Meteo local** | Open-Meteo (já: `/api/meteo`) | Tooltip / camada leve |
-| **Ar (estações)** | OpenAQ v3 (já: `/api/openaq`) | Pontos / heatmap |
+| **Meteo local** | ✅ Open-Meteo (`/api/meteo`) | Tooltip / camada leve |
+| **Ar (estações)** | ✅ OpenAQ v3 (`/api/openaq`) | Pontos / heatmap |
 
 ## Manutenção deste ficheiro
 
-- Ao **integrar** uma fonte nova: adicionar linha na secção “Já integradas” e link para o módulo em `src/infrastructure/`.
+- Ao **integrar** uma fonte nova: adicionar linha na secção “Já integradas” com ✅ no título e link para o módulo em `src/infrastructure/`.
 - Ao **mudar** URL ou formato: atualizar coluna **Entrega** e **Resumo**.
 - Respeitar sempre **termos de uso**, **atribuição** e **quotas** de cada fornecedor.
 
