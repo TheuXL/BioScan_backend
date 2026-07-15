@@ -6,15 +6,18 @@ import { GlimsService } from '../GLIMS/GlimsService';
 import { OceanPollutionService } from '../OceanPollution/OceanPollutionService';
 import { EPA_R9_MARINE_DEBRIS_DATASETS, HTTP_CONFIG as OceanHttpCfg } from '../OceanPollution/OceanPollutionTypes';
 import type { ExtinctionService } from '../Extinction/ExtinctionService';
+import { SeaIceService } from '../SeaIce/SeaIceService';
 import { GLOBE_LAYER_IDS, GLOBE_SCHEMA_VERSION, LIMITS, type RespostaCamadaGloboV1 } from './GlobeTypes';
 import {
   geoJsonParaLixoMarinho,
   geoJsonParaSismos,
   geoJsonParaGeleiras,
+  geoJsonToSeaIce,
   normalizarAmeacadaGbif,
-  normalizarIncendio
+  normalizarIncendio,
 } from './GlobeNormalization';
 
+/** Helper para envelopar a resposta no contrato GlobeV1 */
 function envelope(camadaId: string, pontos: RespostaCamadaGloboV1['pontos'], totalMatching?: number): RespostaCamadaGloboV1 {
   const out: RespostaCamadaGloboV1 = {
     schemaVersion: GLOBE_SCHEMA_VERSION,
@@ -34,9 +37,11 @@ export class GlobeController {
       usgs: UsgsEarthquakeService;
       ocean: OceanPollutionService;
       glims: GlimsService;
+      seaIce: SeaIceService;
     }
   ) {}
 
+  /** Índice de descoberta das camadas do globo */
   getDiscovery(_req: Request, res: Response): void {
     res.status(200).json({
       schemaVersion: GLOBE_SCHEMA_VERSION,
@@ -80,7 +85,15 @@ export class GlobeController {
           caminho: '/api/globe/geleiras',
           indiceFornecedores: '/api/glaciers',
           origemUpstream: '/api/glaciers',
-          parametrosQuery: ['layer','bbox','feature_count']
+          parametrosQuery: ['layer', 'bbox', 'feature_count']
+        },
+        {
+          id: 'sea_ice',
+          metodoHttp: 'GET',
+          caminho: '/api/globe/sea-ice',
+          indiceFornecedores: '/api/sea-ice',
+          origemUpstream: '/api/sea-ice',
+          parametrosQuery: ['layerName', 'bbox', 'feature_count']
         }
       ],
       tipoValoresGlobe: [...GLOBE_LAYER_IDS],
@@ -91,9 +104,7 @@ export class GlobeController {
   async getIncendios(req: Request, res: Response): Promise<void> {
     try {
       if (!req.app.locals.nasaFireService) {
-        res.status(503).json({
-          message: 'Incêndios não disponíveis: configure MAP_KEY e aguarde o serviço NASA FIRMS.'
-        });
+        res.status(503).json({ message: 'Incêndios não disponíveis: aguarde serviço NASA FIRMS.' });
         return;
       }
 
@@ -104,22 +115,16 @@ export class GlobeController {
       if (source) query.source = source;
       if (startDate || endDate) {
         query.acq_date = {};
-        if (startDate) (query.acq_date as Record<string, string>).$gte = String(startDate);
-        if (endDate) (query.acq_date as Record<string, string>).$lte = String(endDate);
+        if (startDate) (query.acq_date as any).$gte = String(startDate);
+        if (endDate) (query.acq_date as any).$lte = String(endDate);
       }
 
       const totalMatching = await NasaFireModel.countDocuments(query);
-      const docs = await NasaFireModel.find(query)
-        .sort({ acq_date: -1, acq_time: -1 })
-        .limit(limit)
-        .lean();
-
-      const pontos = docs.map((d) => normalizarIncendio(d as Parameters<typeof normalizarIncendio>[0]));
+      const docs = await NasaFireModel.find(query).sort({ acq_date: -1 }).limit(limit).lean();
+      const pontos = docs.map((d) => normalizarIncendio(d as any));
       res.status(200).json(envelope('incendio', pontos, totalMatching));
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Globe incendios:', message);
-      res.status(500).json({ message: 'Erro ao montar camada incêndios.', error: message });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Erro em incêndios.', error: error.message });
     }
   }
 
@@ -127,153 +132,93 @@ export class GlobeController {
     try {
       const ext = req.app.locals.extinctionService as ExtinctionService | undefined;
       if (!ext) {
-        res.status(503).json({
-          message:
-            'Camada GBIF indisponível: aguarde a ligação ao MongoDB (serviço de extinção ainda não iniciado).'
-        });
+        res.status(503).json({ message: 'Camada GBIF indisponível.' });
         return;
       }
 
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
-      const category =
-        req.query.category !== undefined && String(req.query.category) !== ''
-          ? String(req.query.category).trim().toUpperCase()
-          : undefined;
-
-      let minLatitude: number | undefined;
-      let maxLatitude: number | undefined;
-      let minLongitude: number | undefined;
-      let maxLongitude: number | undefined;
-      if (
-        req.query.minLatitude !== undefined &&
-        req.query.maxLatitude !== undefined &&
-        req.query.minLongitude !== undefined &&
-        req.query.maxLongitude !== undefined
-      ) {
-        minLatitude = Number.parseFloat(String(req.query.minLatitude));
-        maxLatitude = Number.parseFloat(String(req.query.maxLatitude));
-        minLongitude = Number.parseFloat(String(req.query.minLongitude));
-        maxLongitude = Number.parseFloat(String(req.query.maxLongitude));
-      }
-
-      const totalMatching = await ext.countOccurrences({
-        category,
-        minLatitude,
-        maxLatitude,
-        minLongitude,
-        maxLongitude
-      });
-
-      const rows = await ext.listOccurrences({
+      const category = req.query.category ? String(req.query.category).toUpperCase() : undefined;
+      const filter = {
         limit,
         category,
-        minLatitude,
-        maxLatitude,
-        minLongitude,
-        maxLongitude
-      });
-
-      const pontos = rows.map((d) =>
-        normalizarAmeacadaGbif(d as Parameters<typeof normalizarAmeacadaGbif>[0])
-      );
+        minLatitude: req.query.minLatitude ? Number(req.query.minLatitude) : undefined,
+        maxLatitude: req.query.maxLatitude ? Number(req.query.maxLatitude) : undefined,
+        minLongitude: req.query.minLongitude ? Number(req.query.minLongitude) : undefined,
+        maxLongitude: req.query.maxLongitude ? Number(req.query.maxLongitude) : undefined,
+      };
+      const totalMatching = await ext.countOccurrences(filter);
+      const rows = await ext.listOccurrences(filter);
+      const pontos = rows.map((d) => normalizarAmeacadaGbif(d as any));
       res.status(200).json(envelope('ameacada_gbif', pontos, totalMatching));
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Globe especies-ameacadas:', message);
-      res.status(500).json({ message: 'Erro ao montar camada espécies ameaçadas.', error: message });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Erro em espécies.', error: error.message });
     }
   }
 
   async getSismos(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
-
-      const base = this.deps.usgs.parseExpressQuery(req.query as Record<string, unknown>);
-      const params: Record<string, string> = {
-        ...DEFAULT_QUERY_PARAMS,
-        ...base,
-        format: 'geojson',
-        limit: String(Math.min(limit, 20000))
-      };
-
+      const base = this.deps.usgs.parseExpressQuery(req.query as any);
+      const params = { ...DEFAULT_QUERY_PARAMS, ...base, format: 'geojson', limit: String(limit) };
       const raw = await this.deps.usgs.queryEvents(params);
       let pontos = geoJsonParaSismos(raw);
-      if (pontos.length > limit) {
-        pontos = pontos.slice(0, limit);
-      }
-
+      if (pontos.length > limit) pontos = pontos.slice(0, limit);
       res.status(200).json(envelope('sismo', pontos));
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error('Globe sismos:', message);
-      res.status(500).json({ message: 'Erro ao montar camada sismos.', error: message });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Erro em sismos.', error: error.message });
     }
   }
+
   async getGeleiras(req: Request, res: Response): Promise<void> {
     try {
-      const limit = Number.parseInt(
-        String(req.query.limit ?? LIMITS.DEFAULT),
-        10
-      );
-
+      const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
       const layer = String(req.query.layer ?? 'outlines');
       const bbox = String(req.query.bbox ?? '-180,-90,180,90');
-
-      const raw = await this.deps.glims.getLayerGeoJson(layer, {
-        bbox,
-        srs: 'EPSG:4326',
-        feature_count: limit
-      });
-
+      const raw = await this.deps.glims.getLayerGeoJson(layer, { bbox, srs: 'EPSG:4326', feature_count: limit });
       let pontos = geoJsonParaGeleiras(raw);
-
-      if (pontos.length > limit) {
-        pontos = pontos.slice(0, limit);
-      }
-
-      res.status(200).json(
-        envelope('geleira', pontos)
-      );
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : String(error);
-
-      console.error('Globe geleiras:', message);
-
-      res.status(500).json({
-        message: 'Erro ao montar camada de geleiras.',
-        error: message
-      });
+      if (pontos.length > limit) pontos = pontos.slice(0, limit);
+      res.status(200).json(envelope('geleira', pontos));
+    } catch (error: any) {
+      res.status(500).json({ message: 'Erro em geleiras.', error: error.message });
     }
   }
 
   async getLixoMarinho(req: Request, res: Response): Promise<void> {
     try {
       const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
-      const dataset = req.query.dataset
-        ? String(req.query.dataset)
-        : EPA_R9_MARINE_DEBRIS_DATASETS[0];
-      const layerId = Number.parseInt(String(req.query.layerId ?? '1'), 10);
-      const resultRecordCount = Number.parseInt(
-        String(req.query.resultRecordCount ?? Math.min(limit, OceanHttpCfg.MAX_RESULT_RECORD_COUNT)),
-        10
-      );
+      const dataset = req.query.dataset ? String(req.query.dataset) : EPA_R9_MARINE_DEBRIS_DATASETS[0];
+      const raw = await this.deps.ocean.queryLayerGeoJson(dataset, 1, { resultRecordCount: limit });
+      let pontos = geoJsonParaLixoMarinho(raw, dataset);
+      if (pontos.length > limit) pontos = pontos.slice(0, limit);
+      res.status(200).json(envelope('lixo_marinho', pontos));
+    } catch (error: any) {
+      res.status(500).json({ message: 'Erro em lixo marinho.', error: error.message });
+    }
+  }
 
-      const raw = await this.deps.ocean.queryLayerGeoJson(dataset, layerId, {
-        resultRecordCount: Math.min(Math.max(resultRecordCount, 1), OceanHttpCfg.MAX_RESULT_RECORD_COUNT),
-        where: req.query.where ? String(req.query.where) : undefined
+ 
+  async getSeaIce(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = Number.parseInt(String(req.query.limit ?? LIMITS.DEFAULT), 10);
+      const layer = String(req.query.layerName ?? 'extent-north');
+      const bbox = String(req.query.bbox ?? '-180,60,180,90');
+
+      const raw = await this.deps.seaIce.getLayerGeoJson(layer, {
+        bbox,
+        feature_count: limit
       });
 
-      let pontos = geoJsonParaLixoMarinho(raw, dataset);
+      let pontos = geoJsonToSeaIce(raw);
+
       if (pontos.length > limit) {
         pontos = pontos.slice(0, limit);
       }
 
-      res.status(200).json(envelope('lixo_marinho', pontos));
+      res.status(200).json(envelope('sea_ice', pontos));
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      console.error('Globe lixo-marinho:', message);
-      res.status(500).json({ message: 'Erro ao montar camada lixo marinho.', error: message });
+      console.error('Globe SeaIce:', message);
+      res.status(500).json({ message: 'Error building Sea Ice layer.', error: message });
     }
   }
 }

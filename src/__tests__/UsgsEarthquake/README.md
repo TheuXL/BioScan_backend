@@ -1,33 +1,19 @@
-# Testes — USGS Earthquakes (`UsgsEarthquake`)
+Arquitetura para os tests
 
-Integração real com [USGS FDSNWS Event](https://earthquake.usgs.gov/fdsnws/event/1/) e feeds GeoJSON públicos. Sem MongoDB nem chave de API.
+apis/
+└── function-name/
+    ├── Function-name.test.js
+    ├── README.md
 
-## Importante
+    function-name/
+    ├── Function-name.test.js
+    └── README.md
+    function-name/
+    ├── Function-name.test.js
+    └── README.md
 
-- Pedidos HTTP reais a `earthquake.usgs.gov`.
-- Sem `jest.mock` nem respostas simuladas — asserções sobre GeoJSON vêm da API USGS.
+Não deve pular ou simular uma resposta correta, o test deve ser sempre 100% e status 200OK
 
-## Executar
+npm test -- src/__tests__/NasaFire/NasaFire.test.js
+npm test -- src/__tests__/NasaSeaLevel/NasaSeaLevel.test.js
 
-```bash
-npm test -- src/__tests__/UsgsEarthquake/UsgsEarthquake.test.js
-```
-
-## Pré-requisitos
-
-- Rede com acesso a `earthquake.usgs.gov`.
-
-## Cobertura
-
-| Área | Descrição |
-|------|-----------|
-| `queryEvents` | `FeatureCollection` com `Point`, `mag`, `time`. |
-| `getFeed` | Feed `significant_week`. |
-| `parseExpressQuery` | Arrays → string; validado com consulta real. |
-
-## Rotas REST
-
-- `GET /api/earthquakes` — proxy FDSNWS (`starttime`, `endtime`, `minmagnitude`, bbox, `limit`, …).
-- `GET /api/earthquakes/feed/:window` — feeds (`all_day`, `significant_week`, …).
-
-Código: `src/infrastructure/apis/UsgsEarthquake/`.

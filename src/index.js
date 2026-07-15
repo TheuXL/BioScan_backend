@@ -28,6 +28,8 @@ const { createGlobeFireRoutes } = require('./infrastructure/apis/Globe/GlobeFire
 const { createGlobeOceanRoutes } = require('./infrastructure/apis/Globe/GlobeOceanRoutes');
 const { ExtinctionService } = require('./infrastructure/apis/Extinction/ExtinctionService');
 const { createExtinctionRoutes } = require('./infrastructure/apis/Extinction/ExtinctionRoutes');
+const { SeaIceService } = require('./infrastructure/apis/SeaIce/SeaIceService');
+const { createSeaIceRoutes } = require('./infrastructure/apis/SeaIce/SeaIceRoutes');
 
 const app = express();
 
@@ -76,7 +78,12 @@ const glimsRouter = express.Router();
 app.use('/api/glaciers', createGlimsRoutes(glimsRouter, glimsService));
 app.locals.glimsService = glimsService;
 
-const depsGlobe = { usgs: usgsEarthquakeService, ocean: oceanPollutionService, glims: glimsService };
+const seaIceService = new SeaIceService();
+const seaIceRouter = express.Router();
+app.use('/api/sea-ice', createSeaIceRoutes(seaIceRouter, seaIceService));
+app.locals.seaIceService = seaIceService;
+
+const depsGlobe = { usgs: usgsEarthquakeService, ocean: oceanPollutionService, glims: glimsService, seaIce: seaIceService };
 
 const fireGlobeRouter = express.Router();
 app.use('/api/fire', createGlobeFireRoutes(fireGlobeRouter, depsGlobe));
@@ -193,6 +200,15 @@ app.get('/health', (req, res) => {
         layerGeoJson: '/api/glaciers/layers/:layerName/geojson'
       }
     },
+    seaIce: {
+      mode: 'on-demand',
+      basePath: '/api/sea-ice',
+      source: 'NSIDC Sea Ice Index',
+      endpoints: {
+        capabilities: '/api/sea-ice/capabilities',
+        layerGeoJson: '/api/sea-ice/layers/:layerName/geojson'
+      }
+    },
     globe: {
       mode: 'on-demand',
       basePath: '/api/globe',
@@ -200,7 +216,8 @@ app.get('/health', (req, res) => {
       dominios: {
         fire: '/api/fire',
         ocean: '/api/ocean',
-        glaciers: '/api/globe/geleiras'
+        glaciers: '/api/globe/geleiras',
+        seaIce:'/api/globe/sea-ice'
       }
     },
     extinction: app.locals.extinctionService

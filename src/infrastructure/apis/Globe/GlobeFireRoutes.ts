@@ -4,6 +4,7 @@ import { GlimsService } from '../GLIMS/GlimsService';
 import { UsgsEarthquakeService } from '../UsgsEarthquake/UsgsEarthquakeService';
 import { OceanPollutionService } from '../OceanPollution/OceanPollutionService';
 import { GLOBE_SCHEMA_VERSION, LIMITS } from './GlobeTypes';
+import { SeaIceService } from '../SeaIce/SeaIceService';
 import { validateGlobeLimit } from './GlobeMiddleware';
 import {
   validateSource as validateFireSource,
@@ -17,7 +18,7 @@ import {
  */
 export function createGlobeFireRoutes(
   router: Router,
-  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService; glims: GlimsService}
+  deps: { usgs: UsgsEarthquakeService; ocean: OceanPollutionService; glims: GlimsService; seaIce: SeaIceService;  }
 ): Router {
   const controller = new GlobeController(deps);
 
