@@ -4,7 +4,7 @@ import { UsgsEarthquakeService } from '../UsgsEarthquake/UsgsEarthquakeService';
 import { DEFAULT_QUERY_PARAMS } from '../UsgsEarthquake/UsgsEarthquakeTypes';
 import { GlimsService } from '../GLIMS/GlimsService';
 import { OceanPollutionService } from '../OceanPollution/OceanPollutionService';
-import { EPA_R9_MARINE_DEBRIS_DATASETS, HTTP_CONFIG as OceanHttpCfg } from '../OceanPollution/OceanPollutionTypes';
+import { EPA_R9_MARINE_DEBRIS_DATASETS } from '../OceanPollution/OceanPollutionTypes';
 import type { ExtinctionService } from '../Extinction/ExtinctionService';
 import { SeaIceService } from '../SeaIce/SeaIceService';
 import { GLOBE_LAYER_IDS, GLOBE_SCHEMA_VERSION, LIMITS, type RespostaCamadaGloboV1 } from './GlobeTypes';
@@ -212,7 +212,7 @@ export class GlobeController {
       const raw = await this.deps.usgs.queryEvents(params);
       let pontos = geoJsonParaSismos(raw);
       
-      const totalMatching = raw?.metadata?.count ?? (offset + pontos.length);
+      const totalMatching = (raw as any)?.metadata?.count ?? (offset + pontos.length);
       res.status(200).json(envelope('sismo', pontos, { totalMatching, offset, limit }));
     } catch (error: any) {
       res.status(500).json({ message: 'Erro em sismos.', error: error.message });
